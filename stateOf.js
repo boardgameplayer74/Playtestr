@@ -152,42 +152,135 @@ let stateOf = {
    * allowed to perform in the game. General availability of actions is determined 
    * by the Turn Module via the current stage, phase, round, turn, and step; 
    * however, the action module determines which of the available actions is 
-   * allowed to the current agent by examining the tracking components
+   * allowed to the current agent by examining the tracking components.
+   * 
+   * Actions are the mechanism by which the component state of the game is 
+   * changed. They have a name/id, and a listof checks and performs.
+   * Checks are expressions that must be true for the action to be available
+   * Performs are operations that occur when the action is enacted
+   * 
+   * The Action Module will run the Checks for every action the Turn Module says 
+   * is present, narrowing down the list to only those that have passed all the 
+   * checks. This shorter list is passed to the Agent Module to determine which 
+   * action is actually chosen.
+   * 
+   * Actions should be as discrete as possible. So if a player can buy a card 
+   * with money or sometimes get one for free, those should be distinct actions. 
    */
-  actionModule: [{
-    name: 'action01',
-    // determines when the action can be used
-    // tracking component must have a value of at least 1
-    checks: [{
-      componentName: 'currentAgent.money',
-      discriminator: '>=',
-      value: 'game.itemToPurchase.cost'
-    },{
-      componentName: 'game.itemToPurchase.count',
-      discriminator: '>=',
-      value: 1
-    }],
-    // shows what components are modified
-    modifies: [{
-      componentName: 'currentAgent.money',
-      operations: [{
-        name: 'subtract',
+  actionModule: {
+    type: '',
+    actions: [{
+      // name / id of action
+      name: 'buy one card',
+      id: 'uuid#',
+      // determines when the action can be used
+      checks: [{
+        // there must be at least 1 of the thing you want to get
+        componentName: 'game.itemToPurchase.count',
+        discriminator: '>=',
+        value: 1
+      },{
+        // if the agent has enough money to buy the item ...
+        componentName: 'currentAgent.money',
+        discriminator: '>=',
         value: 'game.itemToPurchase.cost'
-      }]
-    },{
-      componentName: 'game.itemToPurchase.count',
-      operations: [{
-        name: 'subtract',
-        value: '1'
-      }]
-    },{
-      componentName: 'currentAgent.hand',
-      operations: [{
+      }],
+      // determines what the action does
+      performs:[{
+        componentName: 'currentAgent.hand',
         name: 'add',
-        
-      }]
+        value: 'game.itemToPurchase.card'
+      },{
+        componentName: 'currentAgent.money',
+        operation: 'subtract',
+        value: 'game.itemToPurchase.cost'
+      }],
+    },{
+      // name / id of action
+      name: 'get a free card',
+      id: 'uuid#',
+      checks:[{
+        // there must be at least 1 of the thing you want to get
+        componentName: 'game.itemToPurchase.count',
+        discriminator: '>=',
+        value: 1
+      },{
+        // if the agent can take a free item ...
+        componentName: 'currentAgent.freeItem',
+        discriminator: '>=',
+        value: 1
+      }],
+      performs:[{
+        componentName: 'currentAgent.freeItem',
+        operation: 'subtract',
+        value: 1
+      },{
+        componentName: 'currentAgent.hand',
+        name: 'add',
+        value: 'game.itemToPurchase.card'
+      }],
+    }],
+  },
+  
+  
+  /**
+   * the Reaction Module contains a list of actions the game performs based on 
+   * the current component state. This list is divided into several buckets 
+   * depending on when the component state is checked.
+   * Reactions are defined the same as as actions and are capable of all the 
+   * same operations; however, they are kept separate from actions because they 
+   * aren't things the players choose to do directly. Reactions are also 
+   * typically responsible for transitions in the Turn Module
+   */
+  reactionModule: {
+    afterAction: ['action01','action02','action03'],
+    afterTurn: ['action04','action05'],
+    afterRound: ['action06','action07','action07','action08'],
+    afterPhase: ['action09','action10'],
+    afterStage: ['action11','action12'],
+    reactions: [{
+      
     }]
-  }]
+   },
+  
+  /**
+   * The Agent Module contains the number of agents playing the game. It's also 
+   * the module responsible for determining which actions the agents choose of 
+   * those available.
+   * 
+   * In level 1 playtesting, agents choose actions antirely at random. We call 
+   * this monte-carlo testing. Agents do not make decisions based on desired 
+   * outcomes. They just play. This works because we play a very large number of 
+   * games with level 1 agents and are able to discern the relative strength of 
+   * different actions without preconceptive biases.
+   * 
+   * In level 2 playtesting we use level 1 playtesting data to train neural 
+   * networks to make heuristic choices from available actions. These NNs are 
+   * each tuned to achieve specific outcomes:
+   *  (1) highest personal score
+   *  (2) lowest personal score
+   *  (3) highest total game score
+   *  (4) smallest game delta (highest-lowest)
+   *  (5) lowest total game score
+   * the NNs continue to play and reinforce their initial training goals, but 
+   * play against each other in various combinations in order to rate different 
+   * tactics. For example, 3 personal-score maximizers might play a very 
+   * different game than 2 high-totals and a min-delta.
+   */
+  agentModule: {
+    agents: [{
+      name: "agent01",
+
+    },{
+      name: "agent02",
+
+    },{
+      name: "agent03",
+
+    }]
+    
+  }
+  
 };
 
 
