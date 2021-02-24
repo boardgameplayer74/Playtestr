@@ -6,7 +6,8 @@
     "dev": "next dev -p 8080",
     "build": "next build",
     "start": "next start",
-    "playtest": "docker run -it -p 8080:3000 playtestr"
+    "playtest": "docker run -it -p 8080:3000 playtestr",
+    "publish": "amplify publish"
   },
   "dependencies": {
     "next": "^10.0.7",
