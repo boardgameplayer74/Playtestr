@@ -1,0 +1,18 @@
+{
+  "projectName": "playtestr",
+  "version": "3.0",
+  "frontend": "javascript",
+  "javascript": {
+    "framework": "react",
+    "config": {
+      "SourceDir": ".",
+      "DistributionDir": ".next",
+      "BuildCommand": "npm run-script build",
+      "StartCommand": "npm run-script start",
+      "ServerlessContainers": true
+    }
+  },
+  "providers": [
+    "awscloudformation"
+  ]
+}

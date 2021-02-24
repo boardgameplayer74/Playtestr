@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 8080",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "playtest": "docker run -it -p 8080:3000 playtestr"
   },
   "dependencies": {
-    "next": "10.0.7",
+    "next": "^10.0.7",
     "react": "17.0.1",
     "react-dom": "17.0.1"
   }
