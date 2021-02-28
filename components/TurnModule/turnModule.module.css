@@ -1,0 +1,62 @@
+.TMIContainer {
+  width: 500px;
+}
+.cardBox {
+  width: 100%;
+}
+.cardSleeve {
+  display: grid;
+  grid-template-columns: 17fr 1fr;
+  width: 100%;
+}
+.card {
+  display: grid;
+  grid-template-columns: 1fr 5fr;
+  padding: 7px;
+  border-radius: 7px;
+}
+.flowEditor {
+  display: inline-block;
+  width: 100%;
+  height: fit-content;
+  padding: 7px 0;
+}
+.flowEditor button {
+  width: 2em;
+  height: 2em;
+  margin: 1px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+}
+.flowEditor button:hover {
+  box-shadow: 2px 2px 2px rgba(200,200,255,.9), -2px -2px 2px rgba(200,200,255,.9);
+}
+.flowEditor .kill {
+  background-color: pink;
+  color: red;
+  border: none;
+}
+.flowEditor .add {
+  background-color: lightgreen;
+  color: green;
+  border: none;
+}
+.noShow {
+  visibility: hidden;
+}
+.stage {
+  background-color: #ffeeee;
+}
+.phase {
+  background-color: #ffffee;
+}
+.round {
+  background-color: #eeffee;
+}
+.turn {
+  background-color: #eeffff;
+}
+.step {
+  background-color: #eeeeff;
+}

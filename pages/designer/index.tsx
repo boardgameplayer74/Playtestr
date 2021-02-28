@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { TurnModuleParams, TurnModuleState, turnModuleInterface } from '../../components/TurnModule';
+import React  from 'react';
+import { TurnModuleState, turnModuleInterface } from '../../components/TurnModule';
 
 
 export default function designer() {
 
   // this is my state function
   const stateOf = {
+    // this snaps the state of the Turn Module Interface into the state object
     turnModule: TurnModuleState(),
   };
 
