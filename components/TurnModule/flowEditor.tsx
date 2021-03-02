@@ -18,15 +18,28 @@ export default function flowEditor(
     <div className={css.flowEditor}>
       <ReactTooltip />
       <button 
+        className={css.add}
+        data-tip={`Add another ${thing} after this one`}
+        data-place="right"
+        data-type="light"
+        onClick={()=>{
+          stateOf.add(thing,row).catch(alert);
+        }}
+      >+</button>
+      <button 
         className={`${css.kill} ${killShow}`}
         data-tip={`delete the current ${thing}`}
+        data-place="right"
+        data-type="light"
         onClick={()=>{
           stateOf.remove(thing,row);
         }}
-      >x</button>
+      >-</button>
       <button 
         className={`${css.up} ${upShow}`}
         data-tip="move up one"
+        data-place="right"
+        data-type="light"
         onClick={()=>{
           stateOf.moveUp(thing,row);
         }}
@@ -34,17 +47,12 @@ export default function flowEditor(
       <button 
         className={`${css.down} ${downShow}`}
         data-tip="move down one"
+        data-place="right"
+        data-type="light"
         onClick={()=>{
           stateOf.moveDown(thing,row);
         }}
       >&darr;</button>
-      <button 
-        className={css.add}
-        data-tip={`Add another ${thing} after this one`}
-        onClick={()=>{
-          stateOf.add(thing,row).catch(alert);
-        }}
-      >+</button>
     </div>
   );
 }

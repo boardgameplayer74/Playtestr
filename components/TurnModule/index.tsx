@@ -3,6 +3,15 @@ import { v4 as uuidv4 } from 'uuid';
 import css from './turnModule.module.css';
 
 /**
+ * The turn module is responsible for controlling the flow of the game and 
+ * determining which agent acts next. Its settings are chosen from within the 
+ * Turn Module Interface (TMI), but many parameters come from other modules.
+ * The TMI uses four kinds of structures to coordinate the flow of the game:
+ * stages, phases, rounds, turns, and steps
+ */
+const FLOW_PARTS = ['stage','phase','round','turn','step'];
+
+/**
  * Steps are sets of Actions that users are required to pick from in sequential 
  * order. Turns may have a single step with a single available action, a single 
  * step with many available actions, or many steps each with it's own distinct 
@@ -12,7 +21,7 @@ import css from './turnModule.module.css';
 import { Step, NEW_STEP, drawStep } from './drawStep';
  
 /**
- * Turn are the time window during which a single agent performs one or more 
+ * Turns are the time window during which a single agent performs one or more 
  * actions sequentially before another agent is allowed to act, though 
  * interrupts and reactions may alter this. Turns have one or more steps 
  * which define a particular order that actions must be taken in. 
@@ -21,15 +30,6 @@ import { Step, NEW_STEP, drawStep } from './drawStep';
  * Turns are pre-defined structures that are selected by the designer 
  */
 import { Turn, NEW_TURN, drawTurn } from './drawTurn';
-
-/**
- * The turn module is responsible for controlling the flow of the game and 
- * determining which agent acts next. Its settings are chosen from within the 
- * Turn Module Interface (TMI), but many parameters come from other modules.
- * The TMI uses four kinds of structures to coordinate the flow of the game:
- * stages, phases, rounds, turns, and steps
- */
-const FLOW_PARTS = ['stage','phase','round','turn','step'];
 
 /**
  * rounds are the game structure that determines the specific order in which 
@@ -126,7 +126,7 @@ export function TurnModuleState(){
     // allows the client to add new flow members of the TMI state
     add: (thingType: string, row: number) => {
 
-      // TODO: add the new thing
+      // TODO: add the new thing at a particular index location
       return new Promise((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(thingType)>-1) {
 
@@ -144,10 +144,13 @@ export function TurnModuleState(){
             thingType=='turn' ? JSON.parse(JSON.stringify(NEW_TURN)) :
             thingType=='step' ? JSON.parse(JSON.stringify(NEW_STEP)) : {};
           thing.id = uuidv4();
+
           // put the new flow part in the state copy
-          things.push(thing);
+          things.splice(row+1,0,thing);
+
           // replace the original TMI with the new version
           stateOf[`set${capitalize(thingType)}s`](things);
+
           // return true when the function operated correctly
           return resolve();
         }
@@ -157,17 +160,68 @@ export function TurnModuleState(){
     
     // allows the client to remove a flow member from the TMI state
     remove: (thingType: string, row:number) => {
-      alert(`removing ${thingType}`);
+      return new Promise((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(thingType)>-1) {
+
+          // initial immutable TMI state copy
+          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+  
+          // check for too many members
+          if (things.length==1) return reject(`Can't have less than 1 ${thingType}s`);
+
+          // remove the intended thing from the TNI
+          things.splice(row,1);
+
+          // replace the original TMI with the new version
+          stateOf[`set${capitalize(thingType)}s`](things);
+
+          // return true when the function operated correctly
+          return resolve();
+        }
+        return reject(`${thingType} is not an approved flow mechanism`);
+      });
     },
     
     // move this thing up in the list
     moveUp: (thingType: string, row:number) => {
-      alert(`moving ${thingType} up`);
+      return new Promise((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(thingType)>-1) {
+
+          // initial immutable TMI state copy
+          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+  
+          // move the thing up a row
+          things.splice(row-1, 0, things.splice(row, 1)[0]);
+  
+          // replace the original TMI with the new version
+          stateOf[`set${capitalize(thingType)}s`](things);
+
+          // return true when the function operated correctly
+          return resolve();
+        }
+        return reject(`${thingType} is not an approved flow mechanism`);
+      });
     },
     
     // move this thing down in the list
     moveDown: (thingType: string, row:number) => {
-      alert(`moving ${thingType} down`);
+      return new Promise((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(thingType)>-1) {
+
+          // initial immutable TMI state copy
+          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+  
+          // move the thing up a row
+          things.splice(row+1, 0, things.splice(row, 1)[0]);
+  
+          // replace the original TMI with the new version
+          stateOf[`set${capitalize(thingType)}s`](things);
+
+          // return true when the function operated correctly
+          return resolve();
+        }
+        return reject(`${thingType} is not an approved flow mechanism`);
+      });
     },
   };
   

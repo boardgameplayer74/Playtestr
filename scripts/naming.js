@@ -26,3 +26,22 @@ export function camelToSnake(s){
   }
   return phrase;
 }
+
+// this formats comma seprated phrases into cleaner text
+export function phraseFormatter(s){
+  // split it into trimmed, comma-separated phrases
+  let phrases = s.split(',').map(phrase => phrase.trim());
+
+  return phrases.map(phrase => {
+    // remove excess internal whitespace
+    phrase = phrase.replace(/\s\s+/g, ' ');
+
+    // remove unnacceptable characters
+    phrase = phrase.replace(/[|;$%@"<>()+]/g, "");
+
+    // capitalize only first letters
+    let final = phrase.split(' ').map(word => capitalize(word.toLowerCase())).join(' ');
+
+    return final;
+  });
+}
