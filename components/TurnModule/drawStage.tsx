@@ -5,6 +5,9 @@ import { capitalize, phraseFormatter } from '../../scripts/naming';
 import css from './turnModule.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 
+// use this to hide the ID strings appear in the TMI
+const SHOW_ID = ''; //css.noShow;
+
 /**
  * Stages are the largest structure in game flow, and are responsible for 
  * determining the current rules set of the game. Stages frequently play very 
@@ -28,6 +31,7 @@ export interface Stage {
   phasesFreeText: string;         // free text of phase names
   phases: Array<string>;          // list of phases in the stage
   phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
+  rulesFreeText: string;          // free text of rule names
   rules: Array<string>;           // list of rules used in this stage (?)
 }
 
@@ -37,6 +41,7 @@ export const NEW_STAGE = {
   phasesFreeText: '',
   phases: [],
   phaseCycles: [],
+  rulesFreeText: '',
   rules: [],
 };
 
@@ -46,28 +51,26 @@ export function drawStage(
   row: number
 ){
 
-  let collapse = ''; //row==0 ? css.collapse : '';
-
   return (
-  <div className={`${css.cardSleeve} ${collapse}`} key={`stage-${row}`}>
+  <div className={css.cardSleeve} key={`stage-${row}`}>
     <div className={`${css.card} ${css.stage}`}>
-      <div></div><div>Stage</div>
-      <div className={css.head}>id:</div>
-      <div className={css.body}>{stage.id}</div>
-
-      <div className={css.head}>Name:</div>
+      <label className={css.head}>Name:</label>
       <input 
         className={css.body} 
         value={stage.name}
+        autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
           let stages = JSON.parse(JSON.stringify(stateOf.stages));
           stages[row].name = evt.target.value;
           stateOf.setStages(stages);
         }}
       />
-      <div className={css.head}>Phases:</div>
+      <label className={`${css.head} ${SHOW_ID}`}>id:</label>
+      <div className={css.identity}>{stage.id}</div>
+      <label className={css.head}>Phases:</label>
       <TextareaAutosize 
         className={css.body} 
+        minRows={2}
         value={stage.phasesFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
           let stages = JSON.parse(JSON.stringify(stateOf.stages));
@@ -79,15 +82,33 @@ export function drawStage(
             evt.preventDefault();
             let stages = JSON.parse(JSON.stringify(stateOf.stages));
             let phases = phraseFormatter(stages[row].phasesFreeText);
-            stages[row].phases = phases
+            stages[row].phases = phases;
             stages[row].phasesFreeText = phases.join(', ');
             stateOf.setStages(stages);
           }
         }}
       />
-
-      <div className={css.head}>Rules:</div>
-      <TextareaAutosize className={css.body} value={stage.rules.join(', ')}/>
+      <label className={css.head}>Rules:</label>
+      <TextareaAutosize 
+        className={css.body} 
+        minRows={2}
+        value={stage.rulesFreeText}
+        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+          let stages = JSON.parse(JSON.stringify(stateOf.stages));
+          stages[row].rulesFreeText = evt.target.value;
+          stateOf.setStages(stages);
+        }}
+        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+          if(evt.keyCode == 13) {
+            evt.preventDefault();
+            let stages = JSON.parse(JSON.stringify(stateOf.stages));
+            let rules = phraseFormatter(stages[row].rulesFreeText);
+            stages[row].rules = rules;
+            stages[row].rulesFreeText = rules.join(', ');
+            stateOf.setStages(stages);
+          }
+        }}
+      />
     </div>
     {flowEditor(stateOf,'stage',row)}
   </div>

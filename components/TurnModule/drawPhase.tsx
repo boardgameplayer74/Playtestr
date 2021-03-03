@@ -14,11 +14,11 @@ import css from './turnModule.module.css';
  */
 
 export interface Phase {
-  id: string;             // unique identifer for the phase, generated
-  name: string;           // human friendly name for the phase
-  actions: Array<string>; // list of actions available in the phase
-  roundId: string;        // type of round used in this phase
-  turnId: string;         // type of turn used in this phase
+  id: string;               // unique identifer for the phase, generated
+  name: string;             // human friendly name for the phase
+  actions: Array<string>;   // list of actions available in the phase
+  roundId: string;          // type of round used in this phase
+  turnId: string;           // type of turn used in this phase
 }
 
 export const NEW_PHASE = {
@@ -37,17 +37,40 @@ export function drawPhase(
   return (
   <div className={css.cardSleeve} key={`phase-${row}`}>
     <div className={`${css.card} ${css.phase}`}>
-      <div></div><div>Phase</div>
-      <div className={css.head}>id:</div>
-      <div className={css.body}>{phase.id}</div>
-      <div className={css.head}>Name:</div>
-      <div className={css.body}>{phase.name}</div>
-      <div className={css.head}>Actions:</div>
+      <label className={css.head}>Name:</label>
+      <input 
+        className={css.body} 
+        value={phase.name}
+        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+          let phases = JSON.parse(JSON.stringify(stateOf.phases));
+          phases[row].name = evt.target.value;
+          stateOf.setPhases(phases);
+        }}
+      />
+      <label className={css.head}>id:</label>
+      <div className={css.identity}>{phase.id}</div>
+      <label className={css.head}>Actions:</label>
       <div className={css.body}>{phase.actions.join(', ')}</div>
-      <div className={css.head}>RoundID:</div>
-      <div className={css.body}>{phase.roundId}</div>
-      <div className={css.head}>TurnID:</div>
-      <div className={css.body}>{phase.turnId}</div>
+      <label className={css.head}>RoundID:</label>
+      <input 
+        className={css.body} 
+        value={phase.roundId}
+        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+          let phases = JSON.parse(JSON.stringify(stateOf.phases));
+          phases[row].roundId = evt.target.value;
+          stateOf.setPhases(phases);
+        }}
+      />
+      <label className={css.head}>TurnID:</label>
+      <input 
+        className={css.body} 
+        value={phase.turnId}
+        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+          let phases = JSON.parse(JSON.stringify(stateOf.phases));
+          phases[row].turnId = evt.target.value;
+          stateOf.setPhases(phases);
+        }}
+      />
     </div>
     {flowEditor(stateOf,'phase',row)}
   </div>

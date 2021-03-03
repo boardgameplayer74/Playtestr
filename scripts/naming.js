@@ -27,6 +27,16 @@ export function camelToSnake(s){
   return phrase;
 }
 
+// converts camel case into title format
+export function camelToTitle(s){
+  if (typeof s !== 'string') return '';
+
+  // lets start by snake casing it
+  let phrase = camelToSnake(s);
+  let words = phrase.split('_').map(word => capitalize(word));
+  return words.join(' ');
+}
+
 // this formats comma seprated phrases into cleaner text
 export function phraseFormatter(s){
   // split it into trimmed, comma-separated phrases

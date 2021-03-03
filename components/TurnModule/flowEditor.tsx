@@ -22,6 +22,8 @@ export default function flowEditor(
         data-tip={`Add another ${thing} after this one`}
         data-place="right"
         data-type="light"
+         data-border="true"
+       data-border-color="black"
         onClick={()=>{
           stateOf.add(thing,row).catch(alert);
         }}
@@ -31,6 +33,8 @@ export default function flowEditor(
         data-tip={`delete the current ${thing}`}
         data-place="right"
         data-type="light"
+        data-border="true"
+        data-border-color="black"
         onClick={()=>{
           stateOf.remove(thing,row);
         }}
@@ -40,6 +44,8 @@ export default function flowEditor(
         data-tip="move up one"
         data-place="right"
         data-type="light"
+        data-border="true"
+        data-border-color="black"
         onClick={()=>{
           stateOf.moveUp(thing,row);
         }}
@@ -49,6 +55,8 @@ export default function flowEditor(
         data-tip="move down one"
         data-place="right"
         data-type="light"
+        data-border="true"
+        data-border-color="black"
         onClick={()=>{
           stateOf.moveDown(thing,row);
         }}

@@ -1,6 +1,7 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
+import { camelToTitle } from '../../scripts/naming';
 import css from './turnModule.module.css';
 
 /**
@@ -26,7 +27,9 @@ export interface Round {
   id: string;                 // unique identifer for round, generated
   name: string;               // human friendly name for the round
   type: string;               // one of a pre-defined list of Round types
+  interruptFreeText: string;
   interrupts: Array<string>;  // list of actions allowed to interrupt a turn
+  reactionFreeText: string;
   reactions: Array<string>;   // list of actions allowed to react to a turn
   options: Array<RoundOption>; // list of options used with this round
 }
@@ -35,9 +38,26 @@ export const NEW_ROUND = {
   id: '',
   name: '',
   type: '',
+  interruptFreeText: '',
   interrupts: [],
+  reactionFreeText: '',
   reactions: [],
   options: [],
+};
+
+const ROUND_TYPES = {
+  fixed: {},
+  progressive: {},
+  lastFirst: {},
+  randomStart: {},
+  randomTurn: {},
+  staticStat: {},
+  dynamicStat: {},
+  passOrder: {},
+  bidStart: {},
+  bidTurn: {},
+  actionStart: {},
+  actionTurn: {},
 };
  
 export function drawRound(
@@ -49,17 +69,41 @@ export function drawRound(
   <div className={css.cardSleeve} key={`round-${row}`}>
     <div className={`${css.card} ${css.round}`}>
       <div></div><div>Round</div>
-      <div className={css.head}>id:</div>
-      <div className={css.body}>{round.id}</div>
-      <div className={css.head}>Name:</div>
-      <div className={css.body}>{round.name}</div>
-      <div className={css.head}>Type:</div>
-      <div className={css.body}>{round.type}</div>
-      <div className={css.head}>Interrupts:</div>
+      <label className={css.head}>Name:</label>
+      <input 
+        className={css.body} 
+        value={round.name}
+        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+          let rounds = JSON.parse(JSON.stringify(stateOf.rounds));
+          rounds[row].name = evt.target.value;
+          stateOf.setRounds(rounds);
+        }}
+      />
+      <label className={css.head}>id:</label>
+      <div className={css.identity}>{round.id}</div>
+      <label className={css.head}>Type:</label>
+      <select 
+        className={css.body} 
+        value={round.type}
+        onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
+          let rounds = JSON.parse(JSON.stringify(stateOf.rounds));
+          rounds[row].type = evt.target.value;
+          stateOf.setRounds(rounds);
+        }}
+      >
+        <option value="Please Choose">Please Choose</option>
+        {Object.keys(ROUND_TYPES).map(type=>{
+          return (<option value={type}>{camelToTitle(type)}</option>);
+        })}
+      </select>
+
+      <label className={css.head}>Interrupts:</label>
       <div className={css.body}>{round.interrupts.join(', ')}</div>
-      <div className={css.head}>Reactions:</div>
+
+      <label className={css.head}>Reactions:</label>
       <div className={css.body}>{round.reactions.join(', ')}</div>
-      <div className={css.head}>Options:</div>
+
+      <label className={css.head}>Options:</label>
       <div className={css.body}></div>
     </div>
     {flowEditor(stateOf,'round',row)}

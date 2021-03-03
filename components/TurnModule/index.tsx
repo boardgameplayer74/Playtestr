@@ -242,18 +242,23 @@ export function turnModuleInterface(
     <div className={css.TMIContainer}>
       <div>Welcome to the Turn Module Interface!</div>
       <div className={css.cardBox}>
+        <div className={css.cardTitle}>Stages:</div>
         {stateOf.stages.map((item: Stage, row:number) => drawStage(stateOf,item,row))}
       </div>
       <div className={css.cardBox}>
+        <div className={css.cardTitle}>Phases:</div>
         {stateOf.phases.map((item: Phase, row:number) => drawPhase(stateOf,item,row))}
       </div>
       <div className={css.cardBox}>
+        <div className={css.cardTitle}>Rounds:</div>
         {stateOf.rounds.map((item: Round, row:number) => drawRound(stateOf,item,row))}
       </div>
       <div className={css.cardBox}>
+        <div className={css.cardTitle}>Turns:</div>
         {stateOf.turns.map((item: Turn, row:number) => drawTurn(stateOf,item,row))}
       </div>
       <div className={css.cardBox}>
+        <div className={css.cardTitle}>Steps:</div>
         {stateOf.steps.map((item: Step, row:number) => drawStep(stateOf,item,row))}
       </div>
     </div>

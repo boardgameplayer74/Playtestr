@@ -3,6 +3,7 @@
 }
 .cardBox {
   width: 100%;
+  border: 1px solid gray;
 }
 .cardSleeve {
   display: grid;
@@ -14,11 +15,15 @@
   grid-template-columns: 1fr 5fr;
   padding: 7px;
   border-radius: 7px;
-  box-shadow: inset 0px 0px 5px rgba(0,0,0,.2);
+  box-shadow: 0px 0px 5px rgba(0,0,0,.2);
 }
-.card input, .card textarea {
+.card input, .card textarea, .card select {
   border: 1px solid rgba(0,0,0,.03);
   background-color: rgba(255,255,255,.4);
+}
+.cardTitle {
+  text-align: center;
+  font-weight: bold;
 }
 .flowEditor {
   display: inline-block;
@@ -49,6 +54,16 @@
 }
 .noShow {
   visibility: hidden;
+}
+.head {
+  padding: 0;
+  font-size: small;
+}
+.body {
+  padding: 0;
+}
+.identity {
+  color: rgba(0,0,0,.5);
 }
 .stage {
   background-color: #ffeeee;
