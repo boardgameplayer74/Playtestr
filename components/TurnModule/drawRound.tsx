@@ -1,7 +1,8 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
-import { camelToTitle } from '../../scripts/naming';
+import { capitalize, camelToTitle, phraseFormatter } from '../../scripts/naming';
+import TextareaAutosize from 'react-textarea-autosize';
 import css from './turnModule.module.css';
 
 /**
@@ -59,6 +60,19 @@ const ROUND_TYPES = {
   actionStart: {},
   actionTurn: {},
 };
+
+// helper to handle change events
+function changer(
+  stateOf: TurnModuleParams, 
+  flowPart: string,
+  row: number,
+  key: string,
+  value: string | number,
+) {
+  let things = JSON.parse(JSON.stringify(stateOf[flowPart]));
+  things[row][key] = value;
+  stateOf[`set${capitalize(flowPart)}`](things);
+}
  
 export function drawRound(
   stateOf: TurnModuleParams,
@@ -68,15 +82,13 @@ export function drawRound(
   return (
   <div className={css.cardSleeve} key={`round-${row}`}>
     <div className={`${css.card} ${css.round}`}>
-      <div></div><div>Round</div>
       <label className={css.head}>Name:</label>
       <input 
         className={css.body} 
         value={round.name}
+        autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          let rounds = JSON.parse(JSON.stringify(stateOf.rounds));
-          rounds[row].name = evt.target.value;
-          stateOf.setRounds(rounds);
+          stateOf.changer('rounds',row,'name',evt.target.value);
         }}
       />
       <label className={css.head}>id:</label>
@@ -86,22 +98,60 @@ export function drawRound(
         className={css.body} 
         value={round.type}
         onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-          let rounds = JSON.parse(JSON.stringify(stateOf.rounds));
-          rounds[row].type = evt.target.value;
-          stateOf.setRounds(rounds);
+          stateOf.changer('rounds',row,'type',evt.target.value);
         }}
       >
-        <option value="Please Choose">Please Choose</option>
-        {Object.keys(ROUND_TYPES).map(type=>{
-          return (<option value={type}>{camelToTitle(type)}</option>);
+        <option value="Please Choose" key={'round-00'}>Please Choose</option>
+        {Object.keys(ROUND_TYPES).map((type:string,index:number)=>{
+          return (<option value={type} key={`round-${index}`}>{camelToTitle(type)}</option>);
         })}
       </select>
 
       <label className={css.head}>Interrupts:</label>
-      <div className={css.body}>{round.interrupts.join(', ')}</div>
-
+      <TextareaAutosize 
+        className={css.body} 
+        minRows={2}
+        value={round.interruptFreeText}
+        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+          stateOf.changer('rounds',row,'interruptFreeText',evt.target.value);
+        }}
+        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+          if(evt.keyCode == 13) {
+            evt.preventDefault();
+            let interrupts = phraseFormatter(round.interruptFreeText);
+            stateOf.changer('rounds',row,'interrupts',interrupts);
+            stateOf.changer('rounds',row,'interruptFreeText',interrupts.join(', '));
+          }
+        }}
+        onBlur={()=>{
+          let interrupts = phraseFormatter(round.interruptFreeText);
+          stateOf.changer('rounds',row,'interrupts',interrupts);
+          stateOf.changer('rounds',row,'interruptFreeText',interrupts.join(', '));
+        }}
+      />
+      
       <label className={css.head}>Reactions:</label>
-      <div className={css.body}>{round.reactions.join(', ')}</div>
+      <TextareaAutosize 
+        className={css.body}
+        minRows={2}
+        value={round.reactionFreeText}
+        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+          stateOf.changer('rounds',row,'reactionFreeText',evt.target.value);
+        }}
+        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+          if(evt.keyCode == 13) {
+            evt.preventDefault();
+            let reactions = phraseFormatter(round.reactionFreeText);
+            stateOf.changer('rounds',row,'reactions',reactions);
+            stateOf.changer('rounds',row,'reactionFreeText',reactions.join(', '));
+          }
+        }}
+        onBlur={()=>{
+          let reactions = phraseFormatter(round.reactionFreeText);
+          stateOf.changer('rounds',row,'reactions',reactions);
+          stateOf.changer('rounds',row,'reactionFreeText',reactions.join(', '));
+        }}
+      />
 
       <label className={css.head}>Options:</label>
       <div className={css.body}></div>

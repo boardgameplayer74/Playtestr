@@ -41,10 +41,9 @@ export function drawPhase(
       <input 
         className={css.body} 
         value={phase.name}
+        autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          let phases = JSON.parse(JSON.stringify(stateOf.phases));
-          phases[row].name = evt.target.value;
-          stateOf.setPhases(phases);
+          stateOf.changer('phases',row,'name',evt.target.value);
         }}
       />
       <label className={css.head}>id:</label>
@@ -56,9 +55,7 @@ export function drawPhase(
         className={css.body} 
         value={phase.roundId}
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          let phases = JSON.parse(JSON.stringify(stateOf.phases));
-          phases[row].roundId = evt.target.value;
-          stateOf.setPhases(phases);
+          stateOf.changer('phases',row,'roundId',evt.target.value);
         }}
       />
       <label className={css.head}>TurnID:</label>
@@ -66,9 +63,7 @@ export function drawPhase(
         className={css.body} 
         value={phase.turnId}
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          let phases = JSON.parse(JSON.stringify(stateOf.phases));
-          phases[row].turnId = evt.target.value;
-          stateOf.setPhases(phases);
+          stateOf.changer('phases',row,'turnId',evt.target.value);
         }}
       />
     </div>

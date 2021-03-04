@@ -1,9 +1,9 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
-import { capitalize, phraseFormatter } from '../../scripts/naming';
-import css from './turnModule.module.css';
+import { phraseFormatter } from '../../scripts/naming';
 import TextareaAutosize from 'react-textarea-autosize';
+import css from './turnModule.module.css';
 
 // use this to hide the ID strings appear in the TMI
 const SHOW_ID = ''; //css.noShow;
@@ -28,20 +28,20 @@ interface PhaseCycle {
 export interface Stage {
   id: string;                     // unique identifier for the stage, generated
   name: string;                   // human friendly name for the stage
-  phasesFreeText: string;         // free text of phase names
+  phaseFreeText: string;          // free text of phase names
   phases: Array<string>;          // list of phases in the stage
   phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
-  rulesFreeText: string;          // free text of rule names
+  ruleFreeText: string;           // free text of rule names
   rules: Array<string>;           // list of rules used in this stage (?)
 }
 
 export const NEW_STAGE = {
   id: '',
   name: '',
-  phasesFreeText: '',
+  phaseFreeText: '',
   phases: [],
   phaseCycles: [],
-  rulesFreeText: '',
+  ruleFreeText: '',
   rules: [],
 };
 
@@ -60,9 +60,7 @@ export function drawStage(
         value={stage.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          let stages = JSON.parse(JSON.stringify(stateOf.stages));
-          stages[row].name = evt.target.value;
-          stateOf.setStages(stages);
+          stateOf.changer('stages',row,'name',evt.target.value);
         }}
       />
       <label className={`${css.head} ${SHOW_ID}`}>id:</label>
@@ -71,42 +69,44 @@ export function drawStage(
       <TextareaAutosize 
         className={css.body} 
         minRows={2}
-        value={stage.phasesFreeText}
+        value={stage.phaseFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          let stages = JSON.parse(JSON.stringify(stateOf.stages));
-          stages[row].phasesFreeText = evt.target.value;
-          stateOf.setStages(stages);
+          stateOf.changer('stages',row,'phaseFreeText',evt.target.value);
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            let stages = JSON.parse(JSON.stringify(stateOf.stages));
-            let phases = phraseFormatter(stages[row].phasesFreeText);
-            stages[row].phases = phases;
-            stages[row].phasesFreeText = phases.join(', ');
-            stateOf.setStages(stages);
+            let phases = phraseFormatter(stage.phaseFreeText);
+            stateOf.changer('stages',row,'phases',phases);
+            stateOf.changer('stages',row,'phaseFreeText',phases.join(', '));
           }
+        }}
+        onBlur={()=>{
+          let phases = phraseFormatter(stage.phaseFreeText);
+          stateOf.changer('stages',row,'phases',phases);
+          stateOf.changer('stages',row,'phaseFreeText',phases.join(', '));
         }}
       />
       <label className={css.head}>Rules:</label>
       <TextareaAutosize 
         className={css.body} 
         minRows={2}
-        value={stage.rulesFreeText}
+        value={stage.ruleFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          let stages = JSON.parse(JSON.stringify(stateOf.stages));
-          stages[row].rulesFreeText = evt.target.value;
-          stateOf.setStages(stages);
+          stateOf.changer('stages',row,'ruleFreeText',evt.target.value);
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            let stages = JSON.parse(JSON.stringify(stateOf.stages));
-            let rules = phraseFormatter(stages[row].rulesFreeText);
-            stages[row].rules = rules;
-            stages[row].rulesFreeText = rules.join(', ');
-            stateOf.setStages(stages);
+            let rules = phraseFormatter(stage.ruleFreeText);
+            stateOf.changer('stages',row,'rules',rules);
+            stateOf.changer('stages',row,'ruleFreeText',rules.join(', '));
           }
+        }}
+        onBlur={()=>{
+          let rules = phraseFormatter(stage.ruleFreeText);
+          stateOf.changer('stages',row,'rules',rules);
+          stateOf.changer('stages',row,'ruleFreeText',rules.join(', '));
         }}
       />
     </div>

@@ -87,6 +87,7 @@ export interface TurnModuleParams {
   remove: Function,
   moveUp: Function,
   moveDown: Function,
+  changer: Function,
 }
 
 /**
@@ -222,6 +223,18 @@ export function TurnModuleState(){
         }
         return reject(`${thingType} is not an approved flow mechanism`);
       });
+    },
+    
+    // allows us to change individual parameters of a flowPart
+    changer: (
+      flowPart: string,
+      row: number,
+      key: string,
+      value: string | number | Array<string> | Array<number>,
+    ) => {
+      let things = JSON.parse(JSON.stringify(stateOf[flowPart]));
+      things[row][key] = value;
+      stateOf[`set${capitalize(flowPart)}`](things);
     },
   };
   
