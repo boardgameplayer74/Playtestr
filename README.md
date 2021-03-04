@@ -41,7 +41,7 @@ The `pages/index.js` contains the basic skeleton of the interface, laid out with
 This is responsible for controlling the flow of the game and determining which player (agent) acts next. Its settings are chosen from within the **Turn Module Interface (TMI)**, but many parameters come from other modules. The **TMI** uses five kinds of structures to coordinate the flow of the game: **stages**, **phases**, **rounds**, **turns**, and **steps**.  You can discover more about these in the relevant code files. All the components for the **TMI** can be found in the `/components/TurnModule` directory.
 
 ### The Action Module
-The job of the action module is to determine what actions are available to agents at any point in the game. Available actions are dictated by the game phase: if a phase doesn't include a certain action in it, then it may not be performed. This collection of actions forms the basis for what the agent can do, but may be further restricted by the current state of the game components.
+The job of the action module is to determine what actions are available to agents at any point in the game. Available actions are dictated by the game phase: if a phase doesn't include a certain action in it, then it may not be performed. This collection of actions forms the basis for what the agent can do, but may be further restricted by the current state of the game components. The Action Module also determines how agents are allotted actions on their turns using parameters set in the **Action Module Interface (AMI)**. You can discover more about the **AMI** components in files located in the `/components/ActionModule` directory.
 
 ### Other Modules
 TODO
