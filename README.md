@@ -19,12 +19,31 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+Then make changes in the relevant code modules listed below.  When changes are tested and complete you'll want to make sure it builds:
+
+```bash
+next build
+# or
+yarn build
+```
+
+Then you should be ready to commit and push it back to git. If we approve the change, we'll push it to AWS by running
+
+```bash
+amplify publish
+```
+
+## The Code
+
 The `pages/index.js` contains the basic skeleton of the interface, laid out with [`react-tabs`](https://github.com/reactjs/react-tabs) to flip between the different modules.
 
 ### The Turn Module
 This is responsible for controlling the flow of the game and determining which player (agent) acts next. Its settings are chosen from within the **Turn Module Interface (TMI)**, but many parameters come from other modules. The **TMI** uses five kinds of structures to coordinate the flow of the game: **stages**, **phases**, **rounds**, **turns**, and **steps**.  You can discover more about these in the relevant code files. All the components for the **TMI** can be found in the `/components/TurnModule` directory.
 
-## Other Modules
+### The Action Module
+The job of the action module is to determine what actions are available to agents at any point in the game. Available actions are dictated by the game phase: if a phase doesn't include a certain action in it, then it may not be performed. This collection of actions forms the basis for what the agent can do, but may be further restricted by the current state of the game components.
+
+### Other Modules
 TODO
 
 ### REST API

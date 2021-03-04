@@ -128,7 +128,7 @@ export function TurnModuleState(){
     add: (thingType: string, row: number) => {
 
       // TODO: add the new thing at a particular index location
-      return new Promise((resolve,reject)=>{
+      return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(thingType)>-1) {
 
           // initial immutable TMI state copy
@@ -161,7 +161,7 @@ export function TurnModuleState(){
     
     // allows the client to remove a flow member from the TMI state
     remove: (thingType: string, row:number) => {
-      return new Promise((resolve,reject)=>{
+      return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(thingType)>-1) {
 
           // initial immutable TMI state copy
@@ -185,7 +185,7 @@ export function TurnModuleState(){
     
     // move this thing up in the list
     moveUp: (thingType: string, row:number) => {
-      return new Promise((resolve,reject)=>{
+      return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(thingType)>-1) {
 
           // initial immutable TMI state copy
@@ -206,7 +206,7 @@ export function TurnModuleState(){
     
     // move this thing down in the list
     moveDown: (thingType: string, row:number) => {
-      return new Promise((resolve,reject)=>{
+      return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(thingType)>-1) {
 
           // initial immutable TMI state copy
