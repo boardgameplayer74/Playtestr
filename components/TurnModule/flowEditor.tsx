@@ -25,6 +25,10 @@ export default function flowEditor(
          data-border="true"
        data-border-color="black"
         onClick={()=>{
+          let timer = setTimeout(() => {
+            ReactTooltip.hide();
+            clearTimeout(timer);
+          }, 6000);
           stateOf.add(thing,row).catch(alert);
         }}
       >+</button>
@@ -36,6 +40,10 @@ export default function flowEditor(
         data-border="true"
         data-border-color="black"
         onClick={()=>{
+          let timer = setTimeout(() => {
+            ReactTooltip.hide();
+            clearTimeout(timer);
+          }, 6000);
           stateOf.remove(thing,row);
         }}
       >-</button>
@@ -47,6 +55,10 @@ export default function flowEditor(
         data-border="true"
         data-border-color="black"
         onClick={()=>{
+          let timer = setTimeout(() => {
+            ReactTooltip.hide();
+            clearTimeout(timer);
+          }, 6000);
           stateOf.moveUp(thing,row);
         }}
       >&uarr;</button>
@@ -58,6 +70,10 @@ export default function flowEditor(
         data-border="true"
         data-border-color="black"
         onClick={()=>{
+          let timer = setTimeout(() => {
+            ReactTooltip.hide();
+            clearTimeout(timer);
+          }, 6000);
           stateOf.moveDown(thing,row);
         }}
       >&darr;</button>

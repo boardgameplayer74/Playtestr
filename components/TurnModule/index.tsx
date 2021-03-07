@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import Draggable from 'react-draggable';
+import { capitalizeFirstLetter } from '../common/naming';
 import css from './turnModule.module.css';
 
 /**
@@ -62,9 +64,6 @@ import { Phase, NEW_PHASE, drawPhase } from './drawPhase';
  */
 import { Stage, NEW_STAGE, drawStage } from './drawStage';
 
-// we use this to capitalize the first letter of a word
-import { capitalize } from '../../scripts/naming';
-
 /**
  * This exports the type we need for the parent module to interact with the TMI
  * This interface is really only used to type the part of the parent's state 
@@ -82,12 +81,17 @@ export interface TurnModuleParams {
   steps: Array<Step>;   // list of Steps used in the game
   setSteps: Function;   // function to change the saved steps
 
+  showInstructions: boolean;
+  setShowInstructions: Function;
+
   // functions!
   add: Function,
   remove: Function,
   moveUp: Function,
   moveDown: Function,
   changer: Function,
+  namesExist: Function,
+  quickStart: Function,
 }
 
 /**
@@ -116,6 +120,8 @@ export function TurnModuleState(){
   step.id = uuidv4();
   const [steps,setSteps] = useState([step]);
 
+  const [showInstructions, setShowInstructions] = useState(false);
+
   // hey!  a state object!
   const stateOf = {
     stages, setStages,
@@ -124,104 +130,107 @@ export function TurnModuleState(){
     turns, setTurns,
     steps, setSteps,
     
+    showInstructions, 
+    setShowInstructions,
+
     // allows the client to add new flow members of the TMI state
-    add: (thingType: string, row: number) => {
+    add: (flowPart: string, row: number) => {
 
       // TODO: add the new thing at a particular index location
       return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(thingType)>-1) {
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
 
           // initial immutable TMI state copy
-          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
 
           // check for too many members
-          if (things.length>9) return reject(`Can't have more than 10 ${thingType}s`);
+          if (flowParts.length>9) return reject(`Can't have more than 10 ${flowPart}s`);
 
           // create a new flow part for the TMI
           let thing = 
-            thingType=='stage' ? JSON.parse(JSON.stringify(NEW_STAGE)) : 
-            thingType=='phase' ? JSON.parse(JSON.stringify(NEW_PHASE)) : 
-            thingType=='round' ? JSON.parse(JSON.stringify(NEW_ROUND)) :
-            thingType=='turn' ? JSON.parse(JSON.stringify(NEW_TURN)) :
-            thingType=='step' ? JSON.parse(JSON.stringify(NEW_STEP)) : {};
+            flowPart=='stage' ? JSON.parse(JSON.stringify(NEW_STAGE)) : 
+            flowPart=='phase' ? JSON.parse(JSON.stringify(NEW_PHASE)) : 
+            flowPart=='round' ? JSON.parse(JSON.stringify(NEW_ROUND)) :
+            flowPart=='turn' ? JSON.parse(JSON.stringify(NEW_TURN)) :
+            flowPart=='step' ? JSON.parse(JSON.stringify(NEW_STEP)) : {};
           thing.id = uuidv4();
 
           // put the new flow part in the state copy
-          things.splice(row+1,0,thing);
+          flowParts.splice(row+1,0,thing);
 
           // replace the original TMI with the new version
-          stateOf[`set${capitalize(thingType)}s`](things);
+          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
 
           // return true when the function operated correctly
           return resolve();
         }
-        return reject(`${thingType} is not an approved flow mechanism`);
+        return reject(`${flowPart} is not an approved flow mechanism`);
       });
     },
     
     // allows the client to remove a flow member from the TMI state
-    remove: (thingType: string, row:number) => {
+    remove: (flowPart: string, row:number) => {
       return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(thingType)>-1) {
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
 
           // initial immutable TMI state copy
-          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
   
           // check for too many members
-          if (things.length==1) return reject(`Can't have less than 1 ${thingType}s`);
+          if (flowParts.length==1) return reject(`Can't have less than 1 ${flowPart}s`);
 
           // remove the intended thing from the TNI
-          things.splice(row,1);
+          flowParts.splice(row,1);
 
           // replace the original TMI with the new version
-          stateOf[`set${capitalize(thingType)}s`](things);
+          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
 
           // return true when the function operated correctly
           return resolve();
         }
-        return reject(`${thingType} is not an approved flow mechanism`);
+        return reject(`${flowPart} is not an approved flow mechanism`);
       });
     },
     
     // move this thing up in the list
-    moveUp: (thingType: string, row:number) => {
+    moveUp: (flowPart: string, row:number) => {
       return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(thingType)>-1) {
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
 
           // initial immutable TMI state copy
-          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
   
           // move the thing up a row
-          things.splice(row-1, 0, things.splice(row, 1)[0]);
+          flowParts.splice(row-1, 0, flowParts.splice(row, 1)[0]);
   
           // replace the original TMI with the new version
-          stateOf[`set${capitalize(thingType)}s`](things);
+          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
 
           // return true when the function operated correctly
           return resolve();
         }
-        return reject(`${thingType} is not an approved flow mechanism`);
+        return reject(`${flowPart} is not an approved flow mechanism`);
       });
     },
     
     // move this thing down in the list
-    moveDown: (thingType: string, row:number) => {
+    moveDown: (flowPart: string, row:number) => {
       return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(thingType)>-1) {
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
 
           // initial immutable TMI state copy
-          let things = JSON.parse(JSON.stringify(stateOf[`${thingType}s`]));
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
   
           // move the thing up a row
-          things.splice(row+1, 0, things.splice(row, 1)[0]);
+          flowParts.splice(row+1, 0, flowParts.splice(row, 1)[0]);
   
           // replace the original TMI with the new version
-          stateOf[`set${capitalize(thingType)}s`](things);
+          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
 
           // return true when the function operated correctly
           return resolve();
         }
-        return reject(`${thingType} is not an approved flow mechanism`);
+        return reject(`${flowPart} is not an approved flow mechanism`);
       });
     },
     
@@ -232,14 +241,96 @@ export function TurnModuleState(){
       key: string,
       value: string | number | Array<string> | Array<number>,
     ) => {
-      let things = JSON.parse(JSON.stringify(stateOf[flowPart]));
-      things[row][key] = value;
-      stateOf[`set${capitalize(flowPart)}`](things);
+      return new Promise<void>((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+          flowParts[row][key] = value;
+          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
+          return resolve();
+        }
+        return reject (`${flowPart} is not an approved flow mechanism`);
+      });
+    },
+    
+    // checks a particular flowPart list to see if a name if one or more names is present there
+    namesExist: ( flowPart: string, names: Array<string>) => {
+      return new Promise<Array<string>>((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+          
+          // returns a lowercase list of all the names within this flowPart
+          let partNames = flowParts.map((thing:any)=>thing.name.toLowerCase());
+
+          // returns a list of just the names shared in common
+          let common = names.filter((s:string)=>partNames.includes(s.toLowerCase()));
+          return resolve(common);
+        }
+        return reject(`${flowPart} is not an approved flow mechanism`);
+      });
+    },
+    
+    // this resets all the flow parts and provides a simple game framework
+    quickStart: () => {
+      let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
+      newStage.name = 'Stage01'
+      newStage.id = uuidv4();
+      newStage.phaseFreeText = 'Phase01';
+      newStage.phases = ['Phase01'];
+      stateOf.setStages([newStage]);
+
+      let newPhase = JSON.parse(JSON.stringify(stateOf.phases[0]));
+      newPhase.name = 'Phase01'
+      newPhase.id = uuidv4();
+      stateOf.setPhases([newPhase]);
+
+      let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
+      newRound.name = 'Round01'
+      newRound.id = uuidv4();
+      stateOf.setRounds([newRound]);
+
+      let newTurn = JSON.parse(JSON.stringify(stateOf.turns[0]));
+      newTurn.name = 'Turn01'
+      newTurn.id = uuidv4();
+      stateOf.setTurns([newTurn]);
+
+      let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
+      newStep.name = 'Step01'
+      newStep.id = uuidv4();
+      stateOf.setSteps([newStep]);
     },
   };
   
   // send that state object back
   return stateOf;
+}
+
+// this displays the TMI instructions when needed
+function TMIInstructions(stateOf:TurnModuleParams){
+  if (stateOf.showInstructions) {  
+    return (
+      <Draggable>
+        <div className={css.instructions}>
+          <h4>TMI Instructions
+            <button 
+              className={css.killInstuctions}
+              onClick={()=>{
+                stateOf.setShowInstructions(false);
+              }}
+            >X</button>
+          </h4>
+          <div>
+            <p>Every game has at least one each of Stage, Phase, Round, Turn, and Step. Yours may have multiple of any of them.</p>
+            <p>Stages determine the rules in effect during gameplay. Many games have only a single stage because there is only one set of rules in play; however, inclusion of a setup stage with truncated rules is common, as is a final stage where players tally points from milestone awards or collected cards, etc.</p>
+            <p>Phases broadly determine what actions are available to players and may divide play into thematic chunks. For example, your game might have planting, growing, and harvesting phases each with its own kinds of actions to be taken.</p>
+            <p>Rounds are generally sequences of each player receiving one full turn in some kind of order, with a new round started once each player has acted.  There are a lot of variations and options in rounds, including some that defy "traditional" round order at all.</p>
+            <p>Turns are time windows during which a player performs one or more actions sequentially before another agent is allowed to act, though options may alter this, like through <em>interrupts</em> or <em>reactions</em>.</p>
+            <p>Steps, like phases, divide up when actions can be taken into a thematic order; however, steps are all still part of the same player's turn.</p>
+            <p>The Quick Start button will create a simple game template for you; you can always change the names or add extra components later!</p>
+          </div>
+        </div>
+      </Draggable>
+    );
+  }
 }
 
 /**
@@ -253,7 +344,20 @@ export function turnModuleInterface(
 
   return (
     <div className={css.TMIContainer}>
-      <div>Welcome to the Turn Module Interface!</div>
+      <div>
+        <button
+          onClick={()=>{
+            stateOf.quickStart();
+          }}
+        >Quick Start</button>
+        <button>Clear All</button>
+        <button 
+          className={css.helpButton}
+          onClick={()=>{
+            stateOf.setShowInstructions(!stateOf.showInstructions);
+          }}
+        >?</button>
+      </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Stages:</div>
         {stateOf.stages.map((item: Stage, row:number) => drawStage(stateOf,item,row))}
@@ -274,6 +378,7 @@ export function turnModuleInterface(
         <div className={css.cardTitle}>Steps:</div>
         {stateOf.steps.map((item: Step, row:number) => drawStep(stateOf,item,row))}
       </div>
+      {TMIInstructions(stateOf)}
     </div>
   );
 }

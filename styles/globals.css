@@ -14,3 +14,28 @@ a {
 * {
   box-sizing: border-box;
 }
+.navbar {
+  background-color: #222;
+  color: #ddd;
+  height: 2em;
+}
+.navbar span {
+  margin: 0 1em;
+  padding: 1em;
+  font-weight: bold;
+  font-size: large;
+  cursor: pointer;
+}
+.signOut {
+  float:right;
+  font-size: large;
+  background-color: transparent;
+  color: #eee;
+  cursor: pointer;
+  border: none;
+}
+:root {
+  --amplify-primary-color: #00e883;
+  --amplify-primary-tint: #00ff95;
+  --amplify-primary-shade: #00c26e;
+}

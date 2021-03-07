@@ -1,11 +1,15 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
-import { phraseFormatter } from '../../scripts/naming';
+import { 
+  phraseFormatter, 
+  phraseListFormatter, 
+  capitalizeWordListByKey 
+} from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turnModule.module.css';
 
-// use this to hide the ID strings appear in the TMI
+// use this to hide the ID strings that appear in the TMI
 const SHOW_ID = ''; //css.noShow;
 
 /**
@@ -58,9 +62,8 @@ export function drawStage(
       <input 
         className={css.body} 
         value={stage.name}
-        autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('stages',row,'name',evt.target.value);
+          stateOf.changer('stage',row,'name',phraseFormatter(evt.target.value));
         }}
       />
       <label className={`${css.head} ${SHOW_ID}`}>id:</label>
@@ -71,20 +74,23 @@ export function drawStage(
         minRows={2}
         value={stage.phaseFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('stages',row,'phaseFreeText',evt.target.value);
+          stateOf.changer('stage',row,'phaseFreeText',evt.target.value);
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            let phases = phraseFormatter(stage.phaseFreeText);
-            stateOf.changer('stages',row,'phases',phases);
-            stateOf.changer('stages',row,'phaseFreeText',phases.join(', '));
+            let phases = phraseListFormatter(stage.phaseFreeText);
+            stateOf.changer('stage',row,'phases',phases);
+            stateOf.namesExist('phase',phases).then((common:any)=>{
+              let cPhases = capitalizeWordListByKey(phases,common);
+              stateOf.changer('stage',row,'phaseFreeText',cPhases.join(', '));
+            });
           }
         }}
         onBlur={()=>{
-          let phases = phraseFormatter(stage.phaseFreeText);
-          stateOf.changer('stages',row,'phases',phases);
-          stateOf.changer('stages',row,'phaseFreeText',phases.join(', '));
+          let phases = phraseListFormatter(stage.phaseFreeText);
+          stateOf.changer('stage',row,'phases',phases);
+          stateOf.changer('stage',row,'phaseFreeText',phases.join(', '));
         }}
       />
       <label className={css.head}>Rules:</label>
@@ -93,20 +99,23 @@ export function drawStage(
         minRows={2}
         value={stage.ruleFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('stages',row,'ruleFreeText',evt.target.value);
+          stateOf.changer('stage',row,'ruleFreeText',evt.target.value);
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            let rules = phraseFormatter(stage.ruleFreeText);
-            stateOf.changer('stages',row,'rules',rules);
-            stateOf.changer('stages',row,'ruleFreeText',rules.join(', '));
+            let rules = phraseListFormatter(stage.ruleFreeText);
+            stateOf.changer('stage',row,'rules',rules);
+            stateOf.namesExist('phase',rules).then((common:any)=>{
+              let cRules = capitalizeWordListByKey(rules,common);
+              stateOf.changer('stage',row,'ruleFreeText',cRules.join(', '));
+            });
           }
         }}
         onBlur={()=>{
-          let rules = phraseFormatter(stage.ruleFreeText);
-          stateOf.changer('stages',row,'rules',rules);
-          stateOf.changer('stages',row,'ruleFreeText',rules.join(', '));
+          let rules = phraseListFormatter(stage.ruleFreeText);
+          stateOf.changer('stage',row,'rules',rules);
+          stateOf.changer('stage',row,'ruleFreeText',rules.join(', '));
         }}
       />
     </div>

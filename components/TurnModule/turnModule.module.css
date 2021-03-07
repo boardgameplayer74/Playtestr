@@ -1,6 +1,62 @@
 .TMIContainer {
   width: 500px;
+  position: relative;
 }
+
+/* These are css codes for help dialogs */
+.helpButton {
+  float: right;
+  width: 2em;
+  height: 2em;
+  vertical-align: middle;
+  text-align: center;
+  border: none;
+  border-radius: 1em;
+  font-weight: bold;
+  background-color: deepskyblue;
+  color: white;
+}
+.instructions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border: 1px solid deepskyblue;
+}
+.instructions h4 {
+  margin: 0;
+  text-align: center;
+}
+.instructions div {
+  width: 100%;
+  padding: 0.5em;
+  overflow-y: scroll;
+}
+.killInstuctions {
+  float: right;
+  width: 2em;
+  height: 2em;
+  vertical-align: middle;
+  text-align: center;
+  border: none;
+  font-weight: bold;
+  background-color: red;
+  color: white;
+}
+/* instrcutions when the screen is small */
+@media screen and (max-width: 600px) {
+  .helpButton {
+    width: 3em;
+    height: 3em;
+  }
+  .killInstuctions {
+    width: 3em;
+    height: 3em;
+  }
+}
+
+/* thes format the basic card layout in the TMI */
 .cardBox {
   width: 100%;
   border: 1px solid gray;
@@ -13,30 +69,36 @@
 .card {
   display: grid;
   grid-template-columns: 1fr 5fr;
-  padding: 7px;
-  border-radius: 7px;
+  padding: 0.5em;
+  border-radius: 0.5em;
   box-shadow: 0px 0px 5px rgba(0,0,0,.2);
 }
 .card input, .card textarea, .card select {
-  border: 1px solid rgba(0,0,0,.03);
   background-color: rgba(255,255,255,.4);
+  border: 1px solid rgba(0,0,0,.03);
 }
 .cardTitle {
   text-align: center;
   font-weight: bold;
 }
+/* cards when the screen is small */
+@media screen and (max-width: 600px) {
+  
+}
+
+/* the floweditor buttons are down the right side of each card */
 .flowEditor {
   display: inline-block;
   width: 100%;
   height: fit-content;
-  padding: 7px 0;
+  padding: 0.5em 0;
 }
 .flowEditor button {
   width: 2em;
   height: 2em;
   margin: 1px;
   border: none;
-  border-radius: 5px;
+  border-radius: 0.5em;
   font-weight: bold;
 }
 .flowEditor button:hover {
@@ -52,6 +114,15 @@
   color: green;
   border: none;
 }
+/* flowEditor when the screen is small */
+@media screen and (max-width: 600px) {
+  .flowEditor button {
+    width: 3em;
+    height: 3em;
+  }
+}
+
+/* other common formats */
 .noShow {
   visibility: hidden;
 }
@@ -83,4 +154,12 @@
 .collapse {
   height: 3em;
   overflow-x: none;
+}
+
+@media screen and (max-width: 900px) {
+  
+}
+
+@media screen and (max-width: 600px) {
+  
 }

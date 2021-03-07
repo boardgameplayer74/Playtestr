@@ -40,8 +40,12 @@ The `pages/index.js` contains the basic skeleton of the interface, laid out with
 ### The Turn Module
 This is responsible for controlling the flow of the game and determining which player (agent) acts next. Its settings are chosen from within the **Turn Module Interface (TMI)**, but many parameters come from other modules. The **TMI** uses five kinds of structures to coordinate the flow of the game: **stages**, **phases**, **rounds**, **turns**, and **steps**.  You can discover more about these in the relevant code files. All the components for the **TMI** can be found in the `/components/TurnModule` directory.
 
+The main component of the **TurnModule** is the `index.tsx`, which is responsible for rendering the **TMI** itself and also contains the TMI data model. A number of support components are located in the same directory to render different parts of the **TMI** as needed, and a unified **TMI** css module lives here as well.
+
 ### The Action Module
 The job of the action module is to determine what actions are available to agents at any point in the game. Available actions are dictated by the game phase: if a phase doesn't include a certain action in it, then it may not be performed. This collection of actions forms the basis for what the agent can do, but may be further restricted by the current state of the game components. The Action Module also determines how agents are allotted actions on their turns using parameters set in the **Action Module Interface (AMI)**. You can discover more about the **AMI** components in files located in the `/components/ActionModule` directory.
+
+The main component of the **ActionModule** is also named `index.tsx`, renders the **AMI**, and contains the corresponding AMI data model. This directory contains further components to aid in the **AMI** build as well as the unified **AMI** css module.
 
 ### Other Modules
 TODO

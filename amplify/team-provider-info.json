@@ -10,6 +10,11 @@
       "StackName": "amplify-playtestr-dev-191122",
       "StackId": "arn:aws:cloudformation:us-east-1:115587662697:stack/amplify-playtestr-dev-191122/ec7715f0-760a-11eb-8640-12d8863982b5",
       "AmplifyAppId": "d2i4bpe0egi52e"
+    },
+    "categories": {
+      "auth": {
+        "playtestr476362d3": {}
+      }
     }
   }
 }

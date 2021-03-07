@@ -10,10 +10,14 @@
     "publish": "amplify publish"
   },
   "dependencies": {
+    "@aws-amplify/ui-react": "^1.0.3",
+    "@types/react-tabs": "^2.3.2",
     "@types/uuid": "^8.3.0",
+    "aws-amplify": "^3.3.22",
     "next": "^10.0.7",
     "react": "17.0.1",
     "react-dom": "17.0.1",
+    "react-draggable": "^4.4.3",
     "react-tabs": "^3.2.0",
     "react-textarea-autosize": "^8.3.1",
     "react-tooltip": "^4.2.15",

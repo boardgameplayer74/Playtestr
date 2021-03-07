@@ -1,6 +1,7 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
+import { phraseFormatter } from '../common/naming';
 import css from './turnModule.module.css';
 
 /**
@@ -43,8 +44,17 @@ export function drawPhase(
         value={phase.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('phases',row,'name',evt.target.value);
+          stateOf.changer('phase',row,'name',phraseFormatter(evt.target.value));
         }}
+        onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
+          if(evt.keyCode == 13) {
+            evt.preventDefault();
+            stateOf.changer('phase',row,'name',phase.name.trim());
+          }
+        }}
+        onBlur={()=>{
+          stateOf.changer('phase',row,'name',phase.name.trim());
+        }}        
       />
       <label className={css.head}>id:</label>
       <div className={css.identity}>{phase.id}</div>
@@ -55,7 +65,7 @@ export function drawPhase(
         className={css.body} 
         value={phase.roundId}
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('phases',row,'roundId',evt.target.value);
+          stateOf.changer('phase',row,'roundId',evt.target.value);
         }}
       />
       <label className={css.head}>TurnID:</label>
@@ -63,7 +73,7 @@ export function drawPhase(
         className={css.body} 
         value={phase.turnId}
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('phases',row,'turnId',evt.target.value);
+          stateOf.changer('phase',row,'turnId',evt.target.value);
         }}
       />
     </div>

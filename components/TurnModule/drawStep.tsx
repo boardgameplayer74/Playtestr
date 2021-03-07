@@ -1,7 +1,7 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
-import { phraseFormatter } from '../../scripts/naming';
+import { phraseFormatter, phraseListFormatter } from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turnModule.module.css';
 
@@ -40,7 +40,7 @@ export function drawStep(
         value={step.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('steps',row,'name',evt.target.value);
+          stateOf.changer('step',row,'name',phraseFormatter(evt.target.value));
         }}
       />
       <label className={css.head}>id:</label>
@@ -51,20 +51,20 @@ export function drawStep(
         minRows={2}
         value={step.actionFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('steps',row,'actionFreeText',evt.target.value);
+          stateOf.changer('step',row,'actionFreeText',evt.target.value);
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            let actions = phraseFormatter(step.actionFreeText);
-            stateOf.changer('steps',row,'actions',actions);
-            stateOf.changer('steps',row,'actionFreeText',actions.join(', '));
+            let actions = phraseListFormatter(step.actionFreeText);
+            stateOf.changer('step',row,'actions',actions);
+            stateOf.changer('step',row,'actionFreeText',actions.join(', '));
           }
         }}
         onBlur={()=>{
-          let actions = phraseFormatter(step.actionFreeText);
-          stateOf.changer('steps',row,'actions',actions);
-          stateOf.changer('steps',row,'actionFreeText',actions.join(', '));
+          let actions = phraseListFormatter(step.actionFreeText);
+          stateOf.changer('step',row,'actions',actions);
+          stateOf.changer('step',row,'actionFreeText',actions.join(', '));
         }}
       />
     </div>

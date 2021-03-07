@@ -1,7 +1,7 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
-import { phraseFormatter } from '../../scripts/naming';
+import { phraseFormatter, phraseListFormatter } from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turnModule.module.css';
 
@@ -65,7 +65,7 @@ export function drawTurn(
         value={turn.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('turns',row,'name',evt.target.value);
+          stateOf.changer('turn',row,'name',phraseFormatter(evt.target.value));
         }}
       />
       <label className={css.head}>id:</label>
@@ -78,20 +78,20 @@ export function drawTurn(
         minRows={2}
         value={turn.stepFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('turns',row,'stepFreeText',evt.target.value);
+          stateOf.changer('turn',row,'stepFreeText',evt.target.value);
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            let steps = phraseFormatter(turn.stepFreeText);
-            stateOf.changer('turns',row,'steps',steps);
-            stateOf.changer('turns',row,'stepFreeText',steps.join(', '));
+            let steps = phraseListFormatter(turn.stepFreeText);
+            stateOf.changer('turn',row,'steps',steps);
+            stateOf.changer('turn',row,'stepFreeText',steps.join(', '));
           }
         }}
         onBlur={()=>{
-          let steps = phraseFormatter(turn.stepFreeText);
-          stateOf.changer('turns',row,'steps',steps);
-          stateOf.changer('turns',row,'stepFreeText',steps.join(', '));
+          let steps = phraseListFormatter(turn.stepFreeText);
+          stateOf.changer('turn',row,'steps',steps);
+          stateOf.changer('turn',row,'stepFreeText',steps.join(', '));
         }}
       />
       <label className={css.head}>Options:</label>

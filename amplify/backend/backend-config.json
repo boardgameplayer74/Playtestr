@@ -33,5 +33,13 @@
       "hostedZoneId": "Z005962617YGSF3Y1Y2FV",
       "iamAccessUnavailable": true
     }
+  },
+  "auth": {
+    "playtestr476362d3": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
   }
 }
