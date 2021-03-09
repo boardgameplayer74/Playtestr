@@ -15,18 +15,22 @@ import css from './turnModule.module.css';
  */
 
 export interface Phase {
-  id: string;               // unique identifer for the phase, generated
-  name: string;             // human friendly name for the phase
-  actions: Array<string>;   // list of actions available in the phase
-  roundId: string;          // type of round used in this phase
-  turnId: string;           // type of turn used in this phase
+  id: string;             // unique identifer for the phase, generated
+  name: string;           // human friendly name for the phase
+  actions: Array<string>; // list of actions available in the phase
+  roundName: string;      // the human-readable name of the round definition
+  roundId: string;        // the id of the round definition
+  turnName: string;       // human readable turn name
+  turnId: string;         // type of turn used in this phase
 }
 
 export const NEW_PHASE = {
   id: '',
   name: '',
   actions: [],
+  roundName: '',
   roundId: '',
+  turnName: '',
   turnId: '',
 };
  
@@ -58,24 +62,58 @@ export function drawPhase(
       />
       <label className={css.head}>id:</label>
       <div className={css.identity}>{phase.id}</div>
+
       <label className={css.head}>Actions:</label>
       <div className={css.body}>{phase.actions.join(', ')}</div>
-      <label className={css.head}>RoundID:</label>
-      <input 
+
+      <label className={css.head}>Round Name:</label>
+      <select
         className={css.body} 
-        value={phase.roundId}
-        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('phase',row,'roundId',evt.target.value);
+        value={phase.roundName}
+        onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
+          let roundName = evt.target.value;
+          let roundId = stateOf.rounds.reduce((acc,curr)=>{
+            return (curr.name==roundName) ? curr.id : acc;
+          },'');
+          stateOf.changer('phase',row,['roundId','roundName'],[roundId,roundName]);
         }}
-      />
-      <label className={css.head}>TurnID:</label>
-      <input 
+      >
+        <option value="Please Choose">Please Choose</option>
+        {stateOf.rounds.length && stateOf.rounds.map((round,index) => {
+          return (<option 
+            key={`choose-round-${index}`}
+            value={round.name}
+          >{round.name}</option>)
+        })}
+      </select>
+
+      <label className={css.head}>Round Id:</label>
+      <div className={css.identity}>{phase.roundId}</div>
+
+      <label className={css.head}>Turn Name:</label>
+      <select 
         className={css.body} 
-        value={phase.turnId}
-        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('phase',row,'turnId',evt.target.value);
+        value={phase.turnName}
+        onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
+          let turnName = evt.target.value;
+          let turnId = stateOf.turns.reduce((acc,curr)=>{
+            return (curr.name==turnName) ? curr.id : acc;
+          },'');
+          stateOf.changer('phase',row,['turnId','turnName'],[turnId,turnName]);
         }}
-      />
+      >
+        <option value="Please Choose">Please Choose</option>
+        {stateOf.turns.length && stateOf.turns.map((turn,index) => {
+          return (<option 
+            key={`choose-turn-${index}`}
+            value={turn.name}
+          >{turn.name}</option>)
+        })}
+      </select>
+
+      <label className={css.head}>Turn Id:</label>
+      <div className={css.identity}>{phase.turnId}</div>
+
     </div>
     {flowEditor(stateOf,'phase',row)}
   </div>

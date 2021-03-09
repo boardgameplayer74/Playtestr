@@ -238,13 +238,24 @@ export function TurnModuleState(){
     changer: (
       flowPart: string,
       row: number,
-      key: string,
+      key: string | Array<string>,
       value: string | number | Array<string> | Array<number>,
+      obj?: object
     ) => {
       return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(flowPart)>-1) {
           let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-          flowParts[row][key] = value;
+          if (obj!=null) {
+            flowParts[row] = Object.assign(flowParts[row],obj);
+          } else if (Array.isArray(key)) {
+            if (Array.isArray(value) && key.length==value.length) {
+              key.forEach((item,index)=>{
+                flowParts[row][item] = value[index];
+              });
+            } else return reject(`key array and value array must be same length`);
+          } else {
+            flowParts[row][key] = value;
+          }
           stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
           return resolve();
         }
@@ -272,30 +283,35 @@ export function TurnModuleState(){
     // this resets all the flow parts and provides a simple game framework
     quickStart: () => {
       let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
-      newStage.name = 'Stage01'
+      newStage.name = 'Stage01';
       newStage.id = uuidv4();
       newStage.phaseFreeText = 'Phase01';
       newStage.phases = ['Phase01'];
-      stateOf.setStages([newStage]);
 
       let newPhase = JSON.parse(JSON.stringify(stateOf.phases[0]));
-      newPhase.name = 'Phase01'
+      newPhase.name = 'Phase01';
       newPhase.id = uuidv4();
-      stateOf.setPhases([newPhase]);
 
       let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
-      newRound.name = 'Round01'
+      newRound.name = 'Round01';
       newRound.id = uuidv4();
-      stateOf.setRounds([newRound]);
+      newPhase.roundName = newRound.name;
+      newPhase.roundId = newRound.id;
 
       let newTurn = JSON.parse(JSON.stringify(stateOf.turns[0]));
-      newTurn.name = 'Turn01'
+      newTurn.name = 'Turn01';
       newTurn.id = uuidv4();
-      stateOf.setTurns([newTurn]);
+      newPhase.turnName = newTurn.name;
+      newPhase.turnId = newTurn.id;
 
       let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
-      newStep.name = 'Step01'
+      newStep.name = 'Step01';
       newStep.id = uuidv4();
+
+      stateOf.setStages([newStage]);
+      stateOf.setPhases([newPhase]);
+      stateOf.setRounds([newRound]);
+      stateOf.setTurns([newTurn]);
       stateOf.setSteps([newStep]);
     },
   };

@@ -51,34 +51,74 @@ export const NEW_ROUND = {
   options: [],
 };
 
+/**
+ * This is the list of all known round types. Each one is unique and creates a 
+ * specific ordering mechanism. Many are "simple" and don't require any data
+ * beyond the number of players. Others are Adaptive and create play orders 
+ * based on game components they track. Finally there are Purchase orders that 
+ * require players to choose how much much they are willing to spend to 
+ * determine their play order
+ */
 const ROUND_TYPES = {
-  fixed: {},
-  progressive: {},
-  lastFirst: {},
-  randomStart: {},
-  randomTurn: {},
-  staticStat: {},
-  dynamicStat: {},
-  passOrder: {},
-  bidStart: {},
-  bidTurn: {},
-  actionStart: {},
-  actionTurn: {},
+  fixed: {
+    type: "simple",
+    options: {
+      clockwise: true
+    }
+  },
+  progressive: {
+    type: "simple",
+    options: {
+      clockwise: true
+    }
+  },
+  lastFirst: {
+    type: "simple",
+    options: {
+      clockwise: true
+    }
+  },
+  randomStart: {
+    type: "simple",
+    options: {
+      clockwise: true
+    }
+  },
+  randomTurn: {
+    type: "simple"
+  },
+  staticStat: {
+    type: "adaptive",
+    options: {
+      clockwise: true
+    }
+  },
+  dynamicStat: {
+    type: "adaptive"
+  },
+  passOrder: {
+    type: "adaptive"
+  },
+  bidStart: {
+    type: "purchase",
+    options: {
+      clockwise: true
+    }
+  },
+  bidTurn: {
+    type: "purchase"
+  },
+  actionStart: {
+    type: "purchase",
+    options: {
+      clockwise: true
+    }
+  },
+  actionTurn: {
+    type: "purchase"
+  },
 };
 
-// helper to handle change events
-function changer(
-  stateOf: TurnModuleParams, 
-  flowPart: string,
-  row: number,
-  key: string,
-  value: string | number,
-) {
-  let things = JSON.parse(JSON.stringify(stateOf[flowPart]));
-  things[row][key] = value;
-  stateOf[`set${capitalizeFirstLetter(flowPart)}`](things);
-}
- 
 export function drawRound(
   stateOf: TurnModuleParams,
   round: Round,
@@ -111,6 +151,8 @@ export function drawRound(
           return (<option value={type} key={`round-${index}`}>{camelToTitle(type)}</option>);
         })}
       </select>
+      <label className={css.head}>Options:</label>
+      <div className={css.body}></div>
 
       <label className={css.head}>Interrupts:</label>
       <TextareaAutosize 
@@ -158,8 +200,6 @@ export function drawRound(
         }}
       />
 
-      <label className={css.head}>Options:</label>
-      <div className={css.body}></div>
     </div>
     {flowEditor(stateOf,'round',row)}
   </div>
