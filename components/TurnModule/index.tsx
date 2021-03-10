@@ -12,6 +12,7 @@ import css from './turnModule.module.css';
  * stages, phases, rounds, turns, and steps
  */
 const FLOW_PARTS = ['stage','phase','round','turn','step'];
+const TESTING = true;
 
 /**
  * Steps are sets of Actions that users are required to pick from in sequential 
@@ -91,6 +92,7 @@ export interface TurnModuleParams {
   moveDown: Function,
   changer: Function,
   namesExist: Function,
+  getNameById: Function,
   quickStart: Function,
 }
 
@@ -238,24 +240,12 @@ export function TurnModuleState(){
     changer: (
       flowPart: string,
       row: number,
-      key: string | Array<string>,
-      value: string | number | Array<string> | Array<number>,
-      obj?: object
+      obj: object
     ) => {
       return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(flowPart)>-1) {
           let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-          if (obj!=null) {
-            flowParts[row] = Object.assign(flowParts[row],obj);
-          } else if (Array.isArray(key)) {
-            if (Array.isArray(value) && key.length==value.length) {
-              key.forEach((item,index)=>{
-                flowParts[row][item] = value[index];
-              });
-            } else return reject(`key array and value array must be same length`);
-          } else {
-            flowParts[row][key] = value;
-          }
+          flowParts[row] = Object.assign(flowParts[row],obj);
           stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
           return resolve();
         }
@@ -280,6 +270,15 @@ export function TurnModuleState(){
       });
     },
     
+    // retrieves the name of a flow part using the flow part type and id number 
+    getNameById: ( flowPart: string, id: string) => {
+      if (FLOW_PARTS.indexOf(flowPart)>-1) {
+        return stateOf[`${flowPart}s`].reduce((acc,curr)=>{
+            return (curr.id==id) ? curr.name : acc;
+          },'');
+      } else return '';
+    },
+    
     // this resets all the flow parts and provides a simple game framework
     quickStart: () => {
       let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
@@ -295,6 +294,7 @@ export function TurnModuleState(){
       let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
       newRound.name = 'Round01';
       newRound.id = uuidv4();
+      newRound.type = 'fixed';
       newPhase.roundName = newRound.name;
       newPhase.roundId = newRound.id;
 
@@ -315,6 +315,8 @@ export function TurnModuleState(){
       stateOf.setSteps([newStep]);
     },
   };
+  
+  //console.log('INITIAL TMI STATE: ',stateOf);
   
   // send that state object back
   return stateOf;
@@ -358,6 +360,8 @@ export function turnModuleInterface(
   stateOf: TurnModuleParams
 ) {
 
+  //console.log('TMI STATE: ',stateOf);
+
   return (
     <div className={css.TMIContainer}>
       <div>
@@ -376,23 +380,23 @@ export function turnModuleInterface(
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Stages:</div>
-        {stateOf.stages.map((item: Stage, row:number) => drawStage(stateOf,item,row))}
+        {stateOf.stages.map((item: Stage, row:number) => drawStage(stateOf,item,row,{testing:TESTING}))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Phases:</div>
-        {stateOf.phases.map((item: Phase, row:number) => drawPhase(stateOf,item,row))}
+        {stateOf.phases.map((item: Phase, row:number) => drawPhase(stateOf,item,row,{testing:TESTING}))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Rounds:</div>
-        {stateOf.rounds.map((item: Round, row:number) => drawRound(stateOf,item,row))}
+        {stateOf.rounds.map((item: Round, row:number) => drawRound(stateOf,item,row,{testing:TESTING}))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Turns:</div>
-        {stateOf.turns.map((item: Turn, row:number) => drawTurn(stateOf,item,row))}
+        {stateOf.turns.map((item: Turn, row:number) => drawTurn(stateOf,item,row,{testing:TESTING}))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Steps:</div>
-        {stateOf.steps.map((item: Step, row:number) => drawStep(stateOf,item,row))}
+        {stateOf.steps.map((item: Step, row:number) => drawStep(stateOf,item,row,{testing:TESTING}))}
       </div>
       {TMIInstructions(stateOf)}
     </div>

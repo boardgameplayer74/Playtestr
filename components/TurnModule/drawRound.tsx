@@ -122,7 +122,8 @@ const ROUND_TYPES = {
 export function drawRound(
   stateOf: TurnModuleParams,
   round: Round,
-  row: number
+  row: number,
+  options?: object,
 ){
   return (
   <div className={css.cardSleeve} key={`round-${row}`}>
@@ -133,17 +134,19 @@ export function drawRound(
         value={round.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('round',row,'name',phraseFormatter(evt.target.value));
+          stateOf.changer('round',row,{name:phraseFormatter(evt.target.value)});
         }}
       />
+
       <label className={css.head}>id:</label>
       <div className={css.identity}>{round.id}</div>
+
       <label className={css.head}>Type:</label>
       <select 
         className={css.body} 
         value={round.type}
         onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-          stateOf.changer('round',row,'type',evt.target.value);
+          stateOf.changer('round',row,{type:evt.target.value});
         }}
       >
         <option value="Please Choose" key={'round-00'}>Please Choose</option>
@@ -151,6 +154,7 @@ export function drawRound(
           return (<option value={type} key={`round-${index}`}>{camelToTitle(type)}</option>);
         })}
       </select>
+
       <label className={css.head}>Options:</label>
       <div className={css.body}></div>
 
@@ -160,20 +164,18 @@ export function drawRound(
         minRows={2}
         value={round.interruptFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('round',row,'interruptFreeText',evt.target.value);
+          stateOf.changer('round',row,{interruptFreeText:evt.target.value});
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
             let interrupts = phraseListFormatter(round.interruptFreeText);
-            stateOf.changer('round',row,'interrupts',interrupts);
-            stateOf.changer('round',row,'interruptFreeText',interrupts.join(', '));
+            stateOf.changer('round',row,{interrupts,interruptFreeText:interrupts.join(', ')});
           }
         }}
         onBlur={()=>{
           let interrupts = phraseListFormatter(round.interruptFreeText);
-          stateOf.changer('round',row,'interrupts',interrupts);
-          stateOf.changer('round',row,'interruptFreeText',interrupts.join(', '));
+          stateOf.changer('round',row,{interrupts,interruptFreeText:interrupts.join(', ')});
         }}
       />
       
@@ -183,20 +185,18 @@ export function drawRound(
         minRows={2}
         value={round.reactionFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('round',row,'reactionFreeText',evt.target.value);
+          stateOf.changer('round',row,{reactionFreeText:evt.target.value});
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
             let reactions = phraseListFormatter(round.reactionFreeText);
-            stateOf.changer('round',row,'reactions',reactions);
-            stateOf.changer('round',row,'reactionFreeText',reactions.join(', '));
+            stateOf.changer('round',row,{reactions,reactionFreeText:reactions.join(', ')});
           }
         }}
         onBlur={()=>{
           let reactions = phraseListFormatter(round.reactionFreeText);
-          stateOf.changer('round',row,'reactions',reactions);
-          stateOf.changer('round',row,'reactionFreeText',reactions.join(', '));
+          stateOf.changer('round',row,{reactions,reactionFreeText:reactions.join(', ')});
         }}
       />
 

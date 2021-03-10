@@ -54,7 +54,8 @@ export const NEW_TURN = {
 export function drawTurn(
   stateOf: TurnModuleParams,
   turn: Turn,
-  row: number
+  row: number,
+  options?: object,
 ){
   return (
   <div className={css.cardSleeve} key={`turn-${row}`}>
@@ -65,35 +66,37 @@ export function drawTurn(
         value={turn.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('turn',row,'name',phraseFormatter(evt.target.value));
+          stateOf.changer('turn',row,{name:phraseFormatter(evt.target.value)});
         }}
       />
+
       <label className={css.head}>id:</label>
       <div className={css.identity}>{turn.id}</div>
+
       <label className={css.head}>type:</label>
       <div className={css.body}>{turn.type}</div>
+
       <label className={css.head}>Steps:</label>
       <TextareaAutosize 
         className={css.body} 
         minRows={2}
         value={turn.stepFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('turn',row,'stepFreeText',evt.target.value);
+          stateOf.changer('turn',row,{stepFreeText:evt.target.value});
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
             let steps = phraseListFormatter(turn.stepFreeText);
-            stateOf.changer('turn',row,'steps',steps);
-            stateOf.changer('turn',row,'stepFreeText',steps.join(', '));
+            stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
           }
         }}
         onBlur={()=>{
           let steps = phraseListFormatter(turn.stepFreeText);
-          stateOf.changer('turn',row,'steps',steps);
-          stateOf.changer('turn',row,'stepFreeText',steps.join(', '));
+          stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
         }}
       />
+ 
       <label className={css.head}>Options:</label>
       <div className={css.body}>{turn.options}</div>
     </div>

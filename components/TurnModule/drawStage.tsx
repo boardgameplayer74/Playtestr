@@ -9,9 +9,6 @@ import {
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turnModule.module.css';
 
-// use this to hide the ID strings that appear in the TMI
-const SHOW_ID = ''; //css.noShow;
-
 /**
  * Stages are the largest structure in game flow, and are responsible for 
  * determining the current rules set of the game. Stages frequently play very 
@@ -52,74 +49,73 @@ export const NEW_STAGE = {
 export function drawStage(
   stateOf: TurnModuleParams,
   stage: Stage,
-  row: number
+  row: number,
+  options?: object,
 ){
+  // use this to hide the ID strings that appear in the TMI
+  const SHOW_ID = options['testing']==true ? '' : css.noShow;
 
   return (
-  <div className={css.cardSleeve} key={`stage-${row}`}>
-    <div className={`${css.card} ${css.stage}`}>
-      <label className={css.head}>Name:</label>
-      <input 
-        className={css.body} 
-        value={stage.name}
-        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('stage',row,'name',phraseFormatter(evt.target.value));
-        }}
-      />
-      <label className={`${css.head} ${SHOW_ID}`}>id:</label>
-      <div className={css.identity}>{stage.id}</div>
-      <label className={css.head}>Phases:</label>
-      <TextareaAutosize 
-        className={css.body} 
-        minRows={2}
-        value={stage.phaseFreeText}
-        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('stage',row,'phaseFreeText',evt.target.value);
-        }}
-        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-          if(evt.keyCode == 13) {
-            evt.preventDefault();
+    <div className={css.cardSleeve} key={`stage-${row}`}>
+      <div className={`${css.card} ${css.stage}`}>
+        <label className={css.head}>Name:</label>
+        <input 
+          className={css.body} 
+          value={stage.name}
+          onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+            stateOf.changer('stage',row,{name:phraseFormatter(evt.target.value)});
+          }}
+        />
+        <label className={`${css.head} ${SHOW_ID}`}>id:</label>
+        <div className={`${css.identity} ${SHOW_ID}`}>{stage.id}</div>
+        <label className={css.head}>Phases:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={stage.phaseFreeText}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('stage',row,{phaseFreeText:evt.target.value});
+          }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let phases = phraseListFormatter(stage.phaseFreeText);
+              stateOf.namesExist('phase',phases).then((common:any)=>{
+                let cPhases = capitalizeWordListByKey(phases,common);
+                stateOf.changer('stage',row,{phases,phaseFreeText:cPhases.join(', ')});
+              });
+            }
+          }}
+          onBlur={()=>{
             let phases = phraseListFormatter(stage.phaseFreeText);
-            stateOf.changer('stage',row,'phases',phases);
-            stateOf.namesExist('phase',phases).then((common:any)=>{
-              let cPhases = capitalizeWordListByKey(phases,common);
-              stateOf.changer('stage',row,'phaseFreeText',cPhases.join(', '));
-            });
-          }
-        }}
-        onBlur={()=>{
-          let phases = phraseListFormatter(stage.phaseFreeText);
-          stateOf.changer('stage',row,'phases',phases);
-          stateOf.changer('stage',row,'phaseFreeText',phases.join(', '));
-        }}
-      />
-      <label className={css.head}>Rules:</label>
-      <TextareaAutosize 
-        className={css.body} 
-        minRows={2}
-        value={stage.ruleFreeText}
-        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('stage',row,'ruleFreeText',evt.target.value);
-        }}
-        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-          if(evt.keyCode == 13) {
-            evt.preventDefault();
+            stateOf.changer('stage',row,{phases, phaseFreeText:phases.join(', ')});
+          }}
+        />
+        <label className={css.head}>Rules:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={stage.ruleFreeText}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('stage',row,{ruleFreeText:evt.target.value});
+          }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let rules = phraseListFormatter(stage.ruleFreeText);
+              stateOf.namesExist('phase',rules).then((common:any)=>{
+                let cRules = capitalizeWordListByKey(rules,common);
+                stateOf.changer('stage',row,{rules,ruleFreeText:cRules.join(', ')});
+              });
+            }
+          }}
+          onBlur={()=>{
             let rules = phraseListFormatter(stage.ruleFreeText);
-            stateOf.changer('stage',row,'rules',rules);
-            stateOf.namesExist('phase',rules).then((common:any)=>{
-              let cRules = capitalizeWordListByKey(rules,common);
-              stateOf.changer('stage',row,'ruleFreeText',cRules.join(', '));
-            });
-          }
-        }}
-        onBlur={()=>{
-          let rules = phraseListFormatter(stage.ruleFreeText);
-          stateOf.changer('stage',row,'rules',rules);
-          stateOf.changer('stage',row,'ruleFreeText',rules.join(', '));
-        }}
-      />
+            stateOf.changer('stage',row,{rules,ruleFreeText:rules.join(', ')});
+          }}
+        />
+      </div>
+      {flowEditor(stateOf,'stage',row)}
     </div>
-    {flowEditor(stateOf,'stage',row)}
-  </div>
   );
 }

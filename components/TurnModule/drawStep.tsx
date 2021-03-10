@@ -29,7 +29,8 @@ export const NEW_STEP = {
 export function drawStep(
   stateOf: TurnModuleParams,
   step: Step,
-  row: number
+  row: number,
+  options?: object,
 ){
   return (
   <div className={css.cardSleeve} key={`step-${row}`}>
@@ -40,31 +41,31 @@ export function drawStep(
         value={step.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('step',row,'name',phraseFormatter(evt.target.value));
+          stateOf.changer('step',row,{name:phraseFormatter(evt.target.value)});
         }}
       />
+
       <label className={css.head}>id:</label>
       <div className={css.identity}>{step.id}</div>
+
       <label className={css.head}>Actions:</label>
       <TextareaAutosize
         className={css.body}
         minRows={2}
         value={step.actionFreeText}
         onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('step',row,'actionFreeText',evt.target.value);
+          stateOf.changer('step',row,{actionFreeText:evt.target.value});
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
             let actions = phraseListFormatter(step.actionFreeText);
-            stateOf.changer('step',row,'actions',actions);
-            stateOf.changer('step',row,'actionFreeText',actions.join(', '));
+            stateOf.changer('step',row,{actions,actionFreeText:actions.join(', ')});
           }
         }}
         onBlur={()=>{
           let actions = phraseListFormatter(step.actionFreeText);
-          stateOf.changer('step',row,'actions',actions);
-          stateOf.changer('step',row,'actionFreeText',actions.join(', '));
+          stateOf.changer('step',row,{actions,actionFreeText:actions.join(', ')});
         }}
       />
     </div>

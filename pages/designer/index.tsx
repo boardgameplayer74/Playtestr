@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
+import { Tab, Tabs, TabList, TabPanel, resetIdCounter } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import { TurnModuleState, turnModuleInterface } from '../../components/TurnModule';
 import { ActionModuleState, actionModuleInterface } from '../../components/ActionModule';
@@ -34,6 +34,8 @@ export async function getServerSideProps({ req, res }) {
 
 // this draws our designer page
 export default function designer() {
+
+  //resetIdCounter();
 
   // this is my state function
   const stateOf = {

@@ -60,6 +60,7 @@
 .cardBox {
   width: 100%;
   border: 1px solid gray;
+  font-family: cursive!important;
 }
 .cardSleeve {
   display: grid;
@@ -124,7 +125,7 @@
 
 /* other common formats */
 .noShow {
-  visibility: hidden;
+  display: none;
 }
 .head {
   padding: 0;

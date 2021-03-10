@@ -37,8 +37,12 @@ export const NEW_PHASE = {
 export function drawPhase(
   stateOf: TurnModuleParams,
   phase: Phase,
-  row: number
+  row: number,
+  options?: object,
 ){
+  // use this to hide the ID strings that appear in the TMI
+  const SHOW_ID = options['testing']==true ? '' : css.noShow;
+
   return (
   <div className={css.cardSleeve} key={`phase-${row}`}>
     <div className={`${css.card} ${css.phase}`}>
@@ -48,20 +52,20 @@ export function drawPhase(
         value={phase.name}
         autoComplete="off"
         onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('phase',row,'name',phraseFormatter(evt.target.value));
+          stateOf.changer('phase',row,{name:phraseFormatter(evt.target.value)});
         }}
         onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
           if(evt.keyCode == 13) {
             evt.preventDefault();
-            stateOf.changer('phase',row,'name',phase.name.trim());
+            stateOf.changer('phase',row,{name:phase.name.trim()});
           }
         }}
         onBlur={()=>{
-          stateOf.changer('phase',row,'name',phase.name.trim());
+          stateOf.changer('phase',row,{name:phase.name.trim()});
         }}        
       />
-      <label className={css.head}>id:</label>
-      <div className={css.identity}>{phase.id}</div>
+      <label className={`${css.head} ${SHOW_ID}`}>id:</label>
+      <div className={`${css.identity} ${SHOW_ID}`}>{phase.id}</div>
 
       <label className={css.head}>Actions:</label>
       <div className={css.body}>{phase.actions.join(', ')}</div>
@@ -71,15 +75,21 @@ export function drawPhase(
         className={css.body} 
         value={phase.roundName}
         onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
+          //console.log('CHOSEN ROUND ID: ',evt.target);
           let roundName = evt.target.value;
           let roundId = stateOf.rounds.reduce((acc,curr)=>{
             return (curr.name==roundName) ? curr.id : acc;
           },'');
-          stateOf.changer('phase',row,['roundId','roundName'],[roundId,roundName]);
+          //let roundId = evt.target.value;
+          //let roundName = stateOf.rounds.reduce((acc,curr)=>{
+          //  return (curr.id==roundId) ? curr.name : acc;
+          //},'');
+          stateOf.changer('phase',row,{roundId,roundName});
         }}
       >
         <option value="Please Choose">Please Choose</option>
         {stateOf.rounds.length && stateOf.rounds.map((round,index) => {
+          //console.log(`ROUND ${index}: `,round);
           return (<option 
             key={`choose-round-${index}`}
             value={round.name}
@@ -87,8 +97,8 @@ export function drawPhase(
         })}
       </select>
 
-      <label className={css.head}>Round Id:</label>
-      <div className={css.identity}>{phase.roundId}</div>
+      <label className={`${css.head} ${SHOW_ID}`}>Round Id:</label>
+      <div className={`${css.identity} ${SHOW_ID}`}>{phase.roundId}</div>
 
       <label className={css.head}>Turn Name:</label>
       <select 
@@ -99,7 +109,7 @@ export function drawPhase(
           let turnId = stateOf.turns.reduce((acc,curr)=>{
             return (curr.name==turnName) ? curr.id : acc;
           },'');
-          stateOf.changer('phase',row,['turnId','turnName'],[turnId,turnName]);
+          stateOf.changer('phase',row,{turnId,turnName});
         }}
       >
         <option value="Please Choose">Please Choose</option>
@@ -111,8 +121,8 @@ export function drawPhase(
         })}
       </select>
 
-      <label className={css.head}>Turn Id:</label>
-      <div className={css.identity}>{phase.turnId}</div>
+      <label className={`${css.head} ${SHOW_ID}`}>Turn Id:</label>
+      <div className={`${css.identity} ${SHOW_ID}`}>{phase.turnId}</div>
 
     </div>
     {flowEditor(stateOf,'phase',row)}
