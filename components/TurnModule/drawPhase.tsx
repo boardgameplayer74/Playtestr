@@ -73,26 +73,27 @@ export function drawPhase(
       <label className={css.head}>Round Name:</label>
       <select
         className={css.body} 
-        value={phase.roundName}
+        value={phase.roundId}
         onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-          //console.log('CHOSEN ROUND ID: ',evt.target);
-          let roundName = evt.target.value;
-          let roundId = stateOf.rounds.reduce((acc,curr)=>{
-            return (curr.name==roundName) ? curr.id : acc;
-          },'');
-          //let roundId = evt.target.value;
-          //let roundName = stateOf.rounds.reduce((acc,curr)=>{
-          //  return (curr.id==roundId) ? curr.name : acc;
+          //console.log('CHOSEN ROUND: ',evt.target);
+          //let roundName = evt.target.value;
+          //let roundId = stateOf.rounds.reduce((acc,curr)=>{
+          //  return (curr.name==roundName) ? curr.id : acc;
           //},'');
+          let roundId = evt.target.value;
+          let roundName = stateOf.rounds.reduce((acc,curr)=>{
+            return (curr.id==roundId) ? curr.name : acc;
+          },'');
+          console.log(`CHOSEN: name: ${roundName} id: ${roundId}`);
           stateOf.changer('phase',row,{roundId,roundName});
         }}
       >
         <option value="Please Choose">Please Choose</option>
         {stateOf.rounds.length && stateOf.rounds.map((round,index) => {
-          //console.log(`ROUND ${index}: `,round);
+          console.log(`AVAILABLE ROUND ${index}: `,round);
           return (<option 
             key={`choose-round-${index}`}
-            value={round.name}
+            value={round.id}
           >{round.name}</option>)
         })}
       </select>

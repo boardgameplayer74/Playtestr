@@ -82,10 +82,14 @@ export interface TurnModuleParams {
   steps: Array<Step>;   // list of Steps used in the game
   setSteps: Function;   // function to change the saved steps
 
+  initialized: boolean;
+  setInitialized: Function;
+
   showInstructions: boolean;
   setShowInstructions: Function;
 
   // functions!
+  model: Function,
   add: Function,
   remove: Function,
   moveUp: Function,
@@ -93,7 +97,10 @@ export interface TurnModuleParams {
   changer: Function,
   namesExist: Function,
   getNameById: Function,
+  initialize: Function,
   quickStart: Function,
+  clear: Function,
+  clearAll: Function,
 }
 
 /**
@@ -101,27 +108,15 @@ export interface TurnModuleParams {
  * returns that object ot be embedded in a parent state object.
  */
 export function TurnModuleState(){
-  // this is where we set the initial state values
-  let stage = JSON.parse(JSON.stringify(NEW_STAGE));
-  stage.id = uuidv4();
-  const [stages,setStages] = useState([stage]);
+  // these are our main state buckets
+  const [stages,setStages] = useState([]);
+  const [phases,setPhases] = useState([]);
+  const [rounds,setRounds] = useState([]);
+  const [turns,setTurns] = useState([]);
+  const [steps,setSteps] = useState([]);
 
-  let phase = JSON.parse(JSON.stringify(NEW_PHASE));
-  phase.id = uuidv4();
-  const [phases,setPhases] = useState([phase]);
-
-  let round = JSON.parse(JSON.stringify(NEW_ROUND));
-  round.id = uuidv4();
-  const [rounds,setRounds] = useState([round]);
-
-  let turn = JSON.parse(JSON.stringify(NEW_TURN));
-  turn.id = uuidv4();
-  const [turns,setTurns] = useState([turn]);
-
-  let step = JSON.parse(JSON.stringify(NEW_STEP));
-  step.id = uuidv4();
-  const [steps,setSteps] = useState([step]);
-
+  // various state flags
+  const [initialized, setInitialized] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
   // hey!  a state object!
@@ -132,8 +127,22 @@ export function TurnModuleState(){
     turns, setTurns,
     steps, setSteps,
     
+    initialized,
+    setInitialized,
+
     showInstructions, 
     setShowInstructions,
+
+    // returns the current model state of the TMI. Immutable.
+    model: () => {
+      return {
+        stages: JSON.parse(JSON.stringify(stateOf.stages)),
+        phases: JSON.parse(JSON.stringify(stateOf.phases)),
+        rounds: JSON.parse(JSON.stringify(stateOf.rounds)),
+        turns: JSON.parse(JSON.stringify(stateOf.turns)),
+        steps: JSON.parse(JSON.stringify(stateOf.steps))
+      };
+    },
 
     // allows the client to add new flow members of the TMI state
     add: (flowPart: string, row: number) => {
@@ -278,35 +287,42 @@ export function TurnModuleState(){
           },'');
       } else return '';
     },
+
+    // initialize creates a flow part in each bucket using the add function
+    initialize: () => {
+      if (stateOf.initialized==false) {
+        stateOf.setInitialized(true);
+        stateOf.add('stage',0);
+        stateOf.add('phase',0);
+        stateOf.add('round',0);
+        stateOf.add('turn',0);
+        stateOf.add('step',0);
+      }
+    },
     
     // this resets all the flow parts and provides a simple game framework
     quickStart: () => {
       let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
       newStage.name = 'Stage01';
-      newStage.id = uuidv4();
       newStage.phaseFreeText = 'Phase01';
       newStage.phases = ['Phase01'];
 
       let newPhase = JSON.parse(JSON.stringify(stateOf.phases[0]));
       newPhase.name = 'Phase01';
-      newPhase.id = uuidv4();
 
       let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
       newRound.name = 'Round01';
-      newRound.id = uuidv4();
       newRound.type = 'fixed';
       newPhase.roundName = newRound.name;
       newPhase.roundId = newRound.id;
 
       let newTurn = JSON.parse(JSON.stringify(stateOf.turns[0]));
       newTurn.name = 'Turn01';
-      newTurn.id = uuidv4();
       newPhase.turnName = newTurn.name;
       newPhase.turnId = newTurn.id;
 
       let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
       newStep.name = 'Step01';
-      newStep.id = uuidv4();
 
       stateOf.setStages([newStage]);
       stateOf.setPhases([newPhase]);
@@ -314,9 +330,59 @@ export function TurnModuleState(){
       stateOf.setTurns([newTurn]);
       stateOf.setSteps([newStep]);
     },
+    
+    // clear removes all the details from a single flowPart except the id
+    clear: (flowPart: string) => {
+      return new Promise<void>((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+
+          //console.log(`CLEARING ${capitalizeFirstLetter(flowPart)}s`);
+
+          const newFlowParts = flowParts.map(thing => {
+            let newThing;
+            switch(flowPart) {
+              case "stage":
+                newThing = JSON.parse(JSON.stringify(NEW_STAGE));
+                newThing.id = thing.id;
+                break;
+              case "phase":
+                newThing = JSON.parse(JSON.stringify(NEW_PHASE));
+                newThing.id = thing.id;
+                break;
+              case "round":
+                newThing = JSON.parse(JSON.stringify(NEW_ROUND));
+                newThing.id = thing.id;
+                break;
+              case "turn":
+                newThing = JSON.parse(JSON.stringify(NEW_TURN));
+                newThing.id = thing.id;
+                break;
+              case "step":
+                newThing = JSON.parse(JSON.stringify(NEW_STEP));
+                newThing.id = thing.id;
+                break;
+            }
+            return newThing;
+          });
+          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](newFlowParts);
+          return resolve();
+        }
+        return reject(`${flowPart} is not an approved flow mechanism`);
+      });
+    },
+    
+    // runs the clear function on every flowPart bucket
+    clearAll: () => {
+      FLOW_PARTS.forEach(flowPart => {
+        stateOf.clear(flowPart).catch((err)=>{
+          console.log(err);
+        });
+      });      
+    },
   };
   
-  //console.log('INITIAL TMI STATE: ',stateOf);
+  //console.log('INITIAL TMI STATE: ',stateOf.model());
   
   // send that state object back
   return stateOf;
@@ -351,6 +417,15 @@ function TMIInstructions(stateOf:TurnModuleParams){
   }
 }
 
+/*
+export async function getServerSideProps(context) {
+  console.log('SERVER SIDE PROPS FIRED with',context);
+  return {
+    props: {}, // will be passed to the page component as props
+  }
+}
+*/
+
 /**
  * The Turn Module Interface (TMI) is where we draw all the selectors that 
  * control the turn module in an easy-to-user structure and export that back to 
@@ -360,7 +435,9 @@ export function turnModuleInterface(
   stateOf: TurnModuleParams
 ) {
 
-  //console.log('TMI STATE: ',stateOf);
+  // initialize the state only on the browser
+  if (process.browser) stateOf.initialize();
+  if (stateOf.initialized==true) console.log('TMI STATE: ',stateOf.model());
 
   return (
     <div className={css.TMIContainer}>
@@ -370,7 +447,11 @@ export function turnModuleInterface(
             stateOf.quickStart();
           }}
         >Quick Start</button>
-        <button>Clear All</button>
+        <button
+          onClick={()=>{
+            stateOf.clearAll();
+          }}
+        >Clear All</button>
         <button 
           className={css.helpButton}
           onClick={()=>{
