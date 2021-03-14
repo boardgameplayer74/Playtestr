@@ -2,7 +2,7 @@ import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
 import { phraseFormatter } from '../common/naming';
-import css from './turnModule.module.css';
+import css from './turn.module.css';
 
 /**
  * Phases are the game structure that broadly determine which actions are 
@@ -75,22 +75,15 @@ export function drawPhase(
         className={css.body} 
         value={phase.roundId}
         onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-          //console.log('CHOSEN ROUND: ',evt.target);
-          //let roundName = evt.target.value;
-          //let roundId = stateOf.rounds.reduce((acc,curr)=>{
-          //  return (curr.name==roundName) ? curr.id : acc;
-          //},'');
           let roundId = evt.target.value;
           let roundName = stateOf.rounds.reduce((acc,curr)=>{
             return (curr.id==roundId) ? curr.name : acc;
           },'');
-          console.log(`CHOSEN: name: ${roundName} id: ${roundId}`);
           stateOf.changer('phase',row,{roundId,roundName});
         }}
       >
         <option value="Please Choose">Please Choose</option>
         {stateOf.rounds.length && stateOf.rounds.map((round,index) => {
-          console.log(`AVAILABLE ROUND ${index}: `,round);
           return (<option 
             key={`choose-round-${index}`}
             value={round.id}
@@ -104,11 +97,11 @@ export function drawPhase(
       <label className={css.head}>Turn Name:</label>
       <select 
         className={css.body} 
-        value={phase.turnName}
+        value={phase.turnId}
         onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-          let turnName = evt.target.value;
-          let turnId = stateOf.turns.reduce((acc,curr)=>{
-            return (curr.name==turnName) ? curr.id : acc;
+          let turnId = evt.target.value;
+          let turnName = stateOf.turns.reduce((acc,curr)=>{
+            return (curr.id==turnId) ? curr.name : acc;
           },'');
           stateOf.changer('phase',row,{turnId,turnName});
         }}
@@ -117,7 +110,7 @@ export function drawPhase(
         {stateOf.turns.length && stateOf.turns.map((turn,index) => {
           return (<option 
             key={`choose-turn-${index}`}
-            value={turn.name}
+            value={turn.id}
           >{turn.name}</option>)
         })}
       </select>

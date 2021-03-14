@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Draggable from 'react-draggable';
 import { capitalizeFirstLetter } from '../common/naming';
-import css from './turnModule.module.css';
+import css from './turn.module.css';
 
 /**
  * The turn module is responsible for controlling the flow of the game and 
@@ -337,8 +337,6 @@ export function TurnModuleState(){
         if (FLOW_PARTS.indexOf(flowPart)>-1) {
           let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
 
-          //console.log(`CLEARING ${capitalizeFirstLetter(flowPart)}s`);
-
           const newFlowParts = flowParts.map(thing => {
             let newThing;
             switch(flowPart) {
@@ -382,8 +380,6 @@ export function TurnModuleState(){
     },
   };
   
-  //console.log('INITIAL TMI STATE: ',stateOf.model());
-  
   // send that state object back
   return stateOf;
 }
@@ -417,15 +413,6 @@ function TMIInstructions(stateOf:TurnModuleParams){
   }
 }
 
-/*
-export async function getServerSideProps(context) {
-  console.log('SERVER SIDE PROPS FIRED with',context);
-  return {
-    props: {}, // will be passed to the page component as props
-  }
-}
-*/
-
 /**
  * The Turn Module Interface (TMI) is where we draw all the selectors that 
  * control the turn module in an easy-to-user structure and export that back to 
@@ -437,7 +424,6 @@ export function turnModuleInterface(
 
   // initialize the state only on the browser
   if (process.browser) stateOf.initialize();
-  if (stateOf.initialized==true) console.log('TMI STATE: ',stateOf.model());
 
   return (
     <div className={css.TMIContainer}>

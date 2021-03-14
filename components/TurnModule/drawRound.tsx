@@ -8,7 +8,7 @@ import {
   phraseListFormatter 
 } from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
-import css from './turnModule.module.css';
+import css from './turn.module.css';
 
 /**
  * rounds are the game structure that determines the specific order in which 

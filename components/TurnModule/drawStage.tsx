@@ -7,7 +7,7 @@ import {
   capitalizeWordListByKey 
 } from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
-import css from './turnModule.module.css';
+import css from './turn.module.css';
 
 /**
  * Stages are the largest structure in game flow, and are responsible for 
@@ -29,6 +29,7 @@ interface PhaseCycle {
 export interface Stage {
   id: string;                     // unique identifier for the stage, generated
   name: string;                   // human friendly name for the stage
+  description: string;            // free test to describe the stage purpose
   phaseFreeText: string;          // free text of phase names
   phases: Array<string>;          // list of phases in the stage
   phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
@@ -39,6 +40,7 @@ export interface Stage {
 export const NEW_STAGE = {
   id: '',
   name: '',
+  description: '',
   phaseFreeText: '',
   phases: [],
   phaseCycles: [],
@@ -66,8 +68,20 @@ export function drawStage(
             stateOf.changer('stage',row,{name:phraseFormatter(evt.target.value)});
           }}
         />
+
         <label className={`${css.head} ${SHOW_ID}`}>id:</label>
         <div className={`${css.identity} ${SHOW_ID}`}>{stage.id}</div>
+
+        <label className={css.head}>Description:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={stage.description}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('stage',row,{description:evt.target.value});
+          }}
+        />
+
         <label className={css.head}>Phases:</label>
         <TextareaAutosize 
           className={css.body} 
@@ -91,6 +105,7 @@ export function drawStage(
             stateOf.changer('stage',row,{phases, phaseFreeText:phases.join(', ')});
           }}
         />
+
         <label className={css.head}>Rules:</label>
         <TextareaAutosize 
           className={css.body} 

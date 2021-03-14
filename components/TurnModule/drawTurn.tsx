@@ -3,7 +3,7 @@ import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
 import { phraseFormatter, phraseListFormatter } from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
-import css from './turnModule.module.css';
+import css from './turn.module.css';
 
 /**
  * Turn are the time window during which a single agent performs one or more 

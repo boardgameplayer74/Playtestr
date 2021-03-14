@@ -1,6 +1,6 @@
 import React from 'react';
 import { TurnModuleParams } from './index';
-import css from './turnModule.module.css';
+import css from './turn.module.css';
 import ReactTooltip from 'react-tooltip';
 
 export default function flowEditor(
@@ -22,8 +22,9 @@ export default function flowEditor(
         data-tip={`Add another ${thing} after this one`}
         data-place="right"
         data-type="light"
-         data-border="true"
-       data-border-color="black"
+        data-border="true"
+        data-border-color="black"
+        tabIndex={-1}
         onClick={()=>{
           let timer = setTimeout(() => {
             ReactTooltip.hide();
@@ -39,6 +40,7 @@ export default function flowEditor(
         data-type="light"
         data-border="true"
         data-border-color="black"
+        tabIndex={-1}
         onClick={()=>{
           let timer = setTimeout(() => {
             ReactTooltip.hide();
@@ -54,6 +56,7 @@ export default function flowEditor(
         data-type="light"
         data-border="true"
         data-border-color="black"
+        tabIndex={-1}
         onClick={()=>{
           let timer = setTimeout(() => {
             ReactTooltip.hide();
@@ -69,6 +72,7 @@ export default function flowEditor(
         data-type="light"
         data-border="true"
         data-border-color="black"
+        tabIndex={-1}
         onClick={()=>{
           let timer = setTimeout(() => {
             ReactTooltip.hide();
