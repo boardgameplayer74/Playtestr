@@ -15,6 +15,7 @@ import css from './turn.module.css';
 export interface Step {
   id: string;             // unique identifier for the Step, generated
   name: string;           // human friendly name for the Step, changeable
+  description: string;    // free test to describe the stage purpose
   actionFreeText;         // free text of action names
   actions: Array<string>; // a list of Actions permitted during the step
 }
@@ -22,6 +23,7 @@ export interface Step {
 export const NEW_STEP = {
   id: '',
   name: '',
+  description: '',
   actionFreeText: '',
   actions: [],
 };
@@ -33,43 +35,53 @@ export function drawStep(
   options?: object,
 ){
   return (
-  <div className={css.cardSleeve} key={`step-${row}`}>
-    <div className={`${css.card} ${css.step}`}>
-      <label className={css.head}>Name:</label>
-      <input 
-        className={css.body}
-        value={step.name}
-        autoComplete="off"
-        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('step',row,{name:phraseFormatter(evt.target.value)});
-        }}
-      />
+    <div className={css.cardSleeve} key={`step-${row}`}>
+      <div className={`${css.card} ${css.step}`}>
+        <label className={css.head}>Name:</label>
+        <input 
+          className={css.body}
+          value={step.name}
+          autoComplete="off"
+          onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+            stateOf.changer('step',row,{name:phraseFormatter(evt.target.value)});
+          }}
+        />
+  
+        <label className={css.head}>id:</label>
+        <div className={css.identity}>{step.id}</div>
 
-      <label className={css.head}>id:</label>
-      <div className={css.identity}>{step.id}</div>
+        <label className={css.head}>Description:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={step.description}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('step',row,{description:evt.target.value});
+          }}
+        />
 
-      <label className={css.head}>Actions:</label>
-      <TextareaAutosize
-        className={css.body}
-        minRows={2}
-        value={step.actionFreeText}
-        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('step',row,{actionFreeText:evt.target.value});
-        }}
-        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-          if(evt.keyCode == 13) {
-            evt.preventDefault();
+        <label className={css.head}>Actions:</label>
+        <TextareaAutosize
+          className={css.body}
+          minRows={2}
+          value={step.actionFreeText}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('step',row,{actionFreeText:evt.target.value});
+          }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let actions = phraseListFormatter(step.actionFreeText);
+              stateOf.changer('step',row,{actions,actionFreeText:actions.join(', ')});
+            }
+          }}
+          onBlur={()=>{
             let actions = phraseListFormatter(step.actionFreeText);
             stateOf.changer('step',row,{actions,actionFreeText:actions.join(', ')});
-          }
-        }}
-        onBlur={()=>{
-          let actions = phraseListFormatter(step.actionFreeText);
-          stateOf.changer('step',row,{actions,actionFreeText:actions.join(', ')});
-        }}
-      />
+          }}
+        />
+      </div>
+      {flowEditor(stateOf,'step',row)}
     </div>
-    {flowEditor(stateOf,'step',row)}
-  </div>
-  );
+    );
 }

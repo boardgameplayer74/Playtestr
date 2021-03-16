@@ -32,6 +32,7 @@ interface RoundOption {
 export interface Round {
   id: string;                 // unique identifer for round, generated
   name: string;               // human friendly name for the round
+  description: string;        // free test to describe the round purpose
   type: string;               // one of a pre-defined list of Round types
   interruptFreeText: string;
   interrupts: Array<string>;  // list of actions allowed to interrupt a turn
@@ -43,6 +44,7 @@ export interface Round {
 export const NEW_ROUND = {
   id: '',
   name: '',
+  description: '',
   type: '',
   interruptFreeText: '',
   interrupts: [],
@@ -126,82 +128,92 @@ export function drawRound(
   options?: object,
 ){
   return (
-  <div className={css.cardSleeve} key={`round-${row}`}>
-    <div className={`${css.card} ${css.round}`}>
-      <label className={css.head}>Name:</label>
-      <input 
-        className={css.body} 
-        value={round.name}
-        autoComplete="off"
-        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('round',row,{name:phraseFormatter(evt.target.value)});
-        }}
-      />
+    <div className={css.cardSleeve} key={`round-${row}`}>
+      <div className={`${css.card} ${css.round}`}>
+        <label className={css.head}>Name:</label>
+        <input 
+          className={css.body} 
+          value={round.name}
+          autoComplete="off"
+          onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+            stateOf.changer('round',row,{name:phraseFormatter(evt.target.value)});
+          }}
+        />
+  
+        <label className={css.head}>id:</label>
+        <div className={css.identity}>{round.id}</div>
+  
+        <label className={css.head}>Description:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={round.description}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('round',row,{description:evt.target.value});
+          }}
+        />
 
-      <label className={css.head}>id:</label>
-      <div className={css.identity}>{round.id}</div>
-
-      <label className={css.head}>Type:</label>
-      <select 
-        className={css.body} 
-        value={round.type}
-        onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-          stateOf.changer('round',row,{type:evt.target.value});
-        }}
-      >
-        <option value="Please Choose" key={'round-00'}>Please Choose</option>
-        {Object.keys(ROUND_TYPES).map((type:string,index:number)=>{
-          return (<option value={type} key={`round-${index}`}>{camelToTitle(type)}</option>);
-        })}
-      </select>
-
-      <label className={css.head}>Options:</label>
-      <div className={css.body}></div>
-
-      <label className={css.head}>Interrupts:</label>
-      <TextareaAutosize 
-        className={css.body} 
-        minRows={2}
-        value={round.interruptFreeText}
-        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('round',row,{interruptFreeText:evt.target.value});
-        }}
-        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-          if(evt.keyCode == 13) {
-            evt.preventDefault();
+        <label className={css.head}>Type:</label>
+        <select 
+          className={css.body} 
+          value={round.type}
+          onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
+            stateOf.changer('round',row,{type:evt.target.value});
+          }}
+        >
+          <option value="Please Choose" key={'round-00'}>Please Choose</option>
+          {Object.keys(ROUND_TYPES).map((type:string,index:number)=>{
+            return (<option value={type} key={`round-${index}`}>{camelToTitle(type)}</option>);
+          })}
+        </select>
+  
+        <label className={css.head}>Options:</label>
+        <div className={css.body}></div>
+  
+        <label className={css.head}>Interrupts:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={round.interruptFreeText}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('round',row,{interruptFreeText:evt.target.value});
+          }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let interrupts = phraseListFormatter(round.interruptFreeText);
+              stateOf.changer('round',row,{interrupts,interruptFreeText:interrupts.join(', ')});
+            }
+          }}
+          onBlur={()=>{
             let interrupts = phraseListFormatter(round.interruptFreeText);
             stateOf.changer('round',row,{interrupts,interruptFreeText:interrupts.join(', ')});
-          }
-        }}
-        onBlur={()=>{
-          let interrupts = phraseListFormatter(round.interruptFreeText);
-          stateOf.changer('round',row,{interrupts,interruptFreeText:interrupts.join(', ')});
-        }}
-      />
-      
-      <label className={css.head}>Reactions:</label>
-      <TextareaAutosize 
-        className={css.body}
-        minRows={2}
-        value={round.reactionFreeText}
-        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('round',row,{reactionFreeText:evt.target.value});
-        }}
-        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-          if(evt.keyCode == 13) {
-            evt.preventDefault();
+          }}
+        />
+        
+        <label className={css.head}>Reactions:</label>
+        <TextareaAutosize 
+          className={css.body}
+          minRows={2}
+          value={round.reactionFreeText}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('round',row,{reactionFreeText:evt.target.value});
+          }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let reactions = phraseListFormatter(round.reactionFreeText);
+              stateOf.changer('round',row,{reactions,reactionFreeText:reactions.join(', ')});
+            }
+          }}
+          onBlur={()=>{
             let reactions = phraseListFormatter(round.reactionFreeText);
             stateOf.changer('round',row,{reactions,reactionFreeText:reactions.join(', ')});
-          }
-        }}
-        onBlur={()=>{
-          let reactions = phraseListFormatter(round.reactionFreeText);
-          stateOf.changer('round',row,{reactions,reactionFreeText:reactions.join(', ')});
-        }}
-      />
-
+          }}
+        />
+  
+      </div>
+      {flowEditor(stateOf,'round',row)}
     </div>
-    {flowEditor(stateOf,'round',row)}
-  </div>
-  );
+    );
 }

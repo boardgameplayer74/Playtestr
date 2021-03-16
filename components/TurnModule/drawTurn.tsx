@@ -36,6 +36,7 @@ interface TurnOption {
 export interface Turn {
   id: string;                 // unique identifer for turn, generated
   name: string;               // human friendly name for the turn
+  description: string;        // free test to describe the turn purpose
   type: string;               // one of a pre-defined list of Turn types
   stepFreeText: string;       // free text of step names
   steps: Array<string>;       // list of steps taken within a Turn
@@ -45,6 +46,7 @@ export interface Turn {
 export const NEW_TURN = {
   id: '',
   name: '',
+  description: '',
   type: '',
   stepFreeText: '',
   steps: [],
@@ -58,49 +60,59 @@ export function drawTurn(
   options?: object,
 ){
   return (
-  <div className={css.cardSleeve} key={`turn-${row}`}>
-    <div className={`${css.card} ${css.turn}`}>
-      <label className={css.head}>Name:</label>
-      <input 
-        className={css.body} 
-        value={turn.name}
-        autoComplete="off"
-        onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-          stateOf.changer('turn',row,{name:phraseFormatter(evt.target.value)});
-        }}
-      />
+    <div className={css.cardSleeve} key={`turn-${row}`}>
+      <div className={`${css.card} ${css.turn}`}>
+        <label className={css.head}>Name:</label>
+        <input 
+          className={css.body} 
+          value={turn.name}
+          autoComplete="off"
+          onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
+            stateOf.changer('turn',row,{name:phraseFormatter(evt.target.value)});
+          }}
+        />
+  
+        <label className={css.head}>id:</label>
+        <div className={css.identity}>{turn.id}</div>
+  
+        <label className={css.head}>Description:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={turn.description}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('turn',row,{description:evt.target.value});
+          }}
+        />
 
-      <label className={css.head}>id:</label>
-      <div className={css.identity}>{turn.id}</div>
-
-      <label className={css.head}>type:</label>
-      <div className={css.body}>{turn.type}</div>
-
-      <label className={css.head}>Steps:</label>
-      <TextareaAutosize 
-        className={css.body} 
-        minRows={2}
-        value={turn.stepFreeText}
-        onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-          stateOf.changer('turn',row,{stepFreeText:evt.target.value});
-        }}
-        onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-          if(evt.keyCode == 13) {
-            evt.preventDefault();
+        <label className={css.head}>type:</label>
+        <div className={css.body}>{turn.type}</div>
+  
+        <label className={css.head}>Steps:</label>
+        <TextareaAutosize 
+          className={css.body} 
+          minRows={2}
+          value={turn.stepFreeText}
+          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
+            stateOf.changer('turn',row,{stepFreeText:evt.target.value});
+          }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let steps = phraseListFormatter(turn.stepFreeText);
+              stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
+            }
+          }}
+          onBlur={()=>{
             let steps = phraseListFormatter(turn.stepFreeText);
             stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
-          }
-        }}
-        onBlur={()=>{
-          let steps = phraseListFormatter(turn.stepFreeText);
-          stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
-        }}
-      />
- 
-      <label className={css.head}>Options:</label>
-      <div className={css.body}>{turn.options}</div>
+          }}
+        />
+   
+        <label className={css.head}>Options:</label>
+        <div className={css.body}>{turn.options}</div>
+      </div>
+      {flowEditor(stateOf,'turn',row)}
     </div>
-    {flowEditor(stateOf,'turn',row)}
-  </div>
-  );
+    );
 }
