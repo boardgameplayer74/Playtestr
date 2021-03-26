@@ -12,9 +12,16 @@ import css from './turn.module.css';
  * set of available actions.  
  * Some designers call steps "Sequential Phases" or sometimes even just phases.
  */
+ 
+interface Item {
+  label: string;
+  value: string;
+}
+
 export interface Step {
   id: string;             // unique identifier for the Step, generated
   name: string;           // human friendly name for the Step, changeable
+  identity: Item;         // uniquely identifies this step
   description: string;    // free test to describe the stage purpose
   actionFreeText;         // free text of action names
   actions: Array<string>; // a list of Actions permitted during the step
@@ -23,6 +30,7 @@ export interface Step {
 export const NEW_STEP = {
   id: '',
   name: '',
+  identity: null,
   description: '',
   actionFreeText: '',
   actions: [],
@@ -44,15 +52,29 @@ export function drawStep(
         <label className={css.head}>Name:</label>
         <input 
           className={css.body}
-          value={step.name}
-          autoComplete="off"
+          value={step.identity.label}
           onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-            stateOf.changer('step',row,{name:phraseFormatter(evt.target.value)});
+            let identity = JSON.parse(JSON.stringify(step.identity));
+            identity.label = phraseFormatter(evt.target.value);
+            stateOf.changer('step',row,{identity});
           }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let identity = JSON.parse(JSON.stringify(step.identity));
+              identity.label = step.identity.label.trim();
+              stateOf.changer('step',row,{identity});
+            }
+          }}
+          onBlur={()=>{
+            let identity = JSON.parse(JSON.stringify(step.identity));
+            identity.label = step.identity.label.trim();
+            stateOf.changer('step',row,{identity});
+          }}        
         />
   
         <label className={css.head}>id:</label>
-        <div className={css.identity}>{step.id}</div>
+        <div className={css.identity}>{step.identity.value}</div>
 
         <label className={css.head}>Description:</label>
         <TextareaAutosize 

@@ -1,11 +1,7 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
-import { 
-  phraseFormatter, 
-  phraseListFormatter, 
-  capitalizeWordListByKey 
-} from '../common/naming';
+import { phraseFormatter } from '../common/naming';
 import Select from 'react-select';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
@@ -30,7 +26,7 @@ interface PhaseCycle {
   trigger: Array<string>; // an array of trigger events that will end the cycle
 }
 
-interface item {
+interface Item {
   value: string;
   label: string;
 }
@@ -38,22 +34,20 @@ interface item {
 export interface Stage {
   id: string;                     // unique identifier for the stage, generated
   name: string;                   // human friendly name for the stage
+  identity: Item;                 // identifies this stage uniquely
   description: string;            // free test to describe the stage purpose
-  //phaseFreeText: string;          // free text of phase names
   phases: Array<string>;          // list of phases in the stage
   phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
-  //ruleFreeText: string;           // free text of rule names
-  rules: Array<item>;             // list of rules used in this stage (?)
+  rules: Array<Item>;             // list of rules used in this stage (?)
 }
 
 export const NEW_STAGE = {
   id: '',
   name: '',
+  identity: null,
   description: '',
-  //phaseFreeText: '',
   phases: [],
   phaseCycles: [],
-  //ruleFreeText: '',
   rules: [],
 };
 
@@ -85,20 +79,37 @@ export function drawStage(
     }
   };
 
+  //console.log('MODEL: ',stateOf.model());
+
   return (
     <div className={css.cardSleeve} key={`stage-${row}`}>
       <div className={`${css.card} ${css.stage}`}>
         <label className={css.head}>Name:</label>
         <input 
           className={css.body} 
-          value={stage.name}
+          value={stage.identity.label}
           onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-            stateOf.changer('stage',row,{name:phraseFormatter(evt.target.value)});
+            let identity = JSON.parse(JSON.stringify(stage.identity));
+            identity.label = phraseFormatter(evt.target.value);
+            stateOf.changer('stage',row,{identity});
           }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let identity = JSON.parse(JSON.stringify(stage.identity));
+              identity.label = stage.identity.label.trim();
+              stateOf.changer('stage',row,{identity});
+            }
+          }}
+          onBlur={()=>{
+            let identity = JSON.parse(JSON.stringify(stage.identity));
+            identity.label = stage.identity.label.trim();
+            stateOf.changer('stage',row,{identity});
+          }}        
         />
 
         <label className={`${css.head} ${SHOW_ID}`}>id:</label>
-        <div className={`${css.identity} ${SHOW_ID}`}>{stage.id}</div>
+        <div className={`${css.identity} ${SHOW_ID}`}>{stage.identity.value}</div>
 
         <label className={css.head}>Description:</label>
         <TextareaAutosize 
@@ -116,22 +127,18 @@ export function drawStage(
           styles={customStyles}
           isMulti
           value={(()=>{
-            let childIds = stateOf.findChildren(stage.id);
-            return childIds.map((childId)=>
-              ({label:stateOf.getNameById('phase',childId), value:childId}));
+            let childIds = stateOf.findChildren(stage.identity.value);
+            return childIds.map((childId:string) =>
+              stateOf.getNameById('phase',childId));
           })()}
-          options={stateOf.phases.map(phase=>{
-            let phaseName = stateOf.phases.reduce((acc,curr)=>
-              (curr.id==phase.id) ? curr.name : acc,'');
-            return {label: phaseName, value: phase.id}
-          })}
+          options={stateOf.phases.map((phase)=>phase.identity)}
           onChange={(phases,type) => {
             if (type.action=='select-option') {
-              stateOf.addLink(stage.id,type.option.value);
+              stateOf.addLink(stage.identity.value,type.option.value);
             } else if (type.action=='remove-value') {
-              stateOf.removeLink(stage.id,type.removedValue.value);
+              stateOf.unLink(stage.identity.value,type.removedValue.value);
             } else if (type.action=='clear') {
-              stateOf.removeLink(stage.id,null);
+              stateOf.unLink(stage.identity.value,null);
             }
           }}
         />

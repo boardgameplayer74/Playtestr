@@ -1,7 +1,7 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
-import { phraseFormatter, phraseListFormatter, capitalizeWordListByKey } from '../common/naming';
+import { phraseFormatter } from '../common/naming';
 import Select from 'react-select';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
@@ -24,31 +24,23 @@ interface Item {
 export interface Phase {
   id: string;             // unique identifer for the phase, generated
   name: string;           // human friendly name for the phase
+  identity: Item;         //  uniquely identifies this phase
   description: string;    // free test to describe the phase purpose
-  //stageFreeText: string;  // free text of the stages this phase can be found in
   stages: Array<string>;  // list of stages this phase can be found in
   actions: Array<Item>; // list of actions available in the phase
-  //roundName: string;      // the human-readable name of the round definition
-  //roundId: string;        // the id of the round definition
   round: Item;            // holds the chosen round type
-  //turnName: string;       // human readable turn name
-  //turnId: string;         // type of turn used in this phase
-  turn: Item;             // holds the chosen turn type
+  //turn: Item;             // holds the chosen turn type
 }
 
 export const NEW_PHASE = {
   id: '',
   name: '',
+  identity: null,
   description: '',
-  //stageFreeText: '',
   stages: [],
   actions: [],
-  //roundName: '',
-  //roundId: '',
   round: null,
-  //turnName: '',
-  //turnId: '',
-  turn: null,
+  //turn: null,
 };
  
 export function drawPhase(
@@ -85,23 +77,28 @@ export function drawPhase(
         <label className={css.head}>Name:</label>
         <input 
           className={css.body} 
-          value={phase.name}
-          autoComplete="off"
+          value={phase.identity.label}
           onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-            stateOf.changer('phase',row,{name:phraseFormatter(evt.target.value)});
+            let identity = JSON.parse(JSON.stringify(phase.identity));
+            identity.label = phraseFormatter(evt.target.value);
+            stateOf.changer('phase',row,{identity});
           }}
           onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
             if(evt.keyCode == 13) {
               evt.preventDefault();
-              stateOf.changer('phase',row,{name:phase.name.trim()});
+              let identity = JSON.parse(JSON.stringify(phase.identity));
+              identity.label = phase.identity.label.trim();
+              stateOf.changer('phase',row,{identity});
             }
           }}
           onBlur={()=>{
-            stateOf.changer('phase',row,{name:phase.name.trim()});
+            let identity = JSON.parse(JSON.stringify(phase.identity));
+            identity.label = phase.identity.label.trim();
+            stateOf.changer('phase',row,{identity});
           }}        
         />
         <label className={`${css.head} ${SHOW_ID}`}>id:</label>
-        <div className={`${css.identity} ${SHOW_ID}`}>{phase.id}</div>
+        <div className={`${css.identity} ${SHOW_ID}`}>{phase.identity.value}</div>
   
         <label className={css.head}>Description:</label>
         <TextareaAutosize 
@@ -116,26 +113,21 @@ export function drawPhase(
         <label className={css.head}>Parent Stages:</label>
         <Select 
           className={css.selector}
-          classNamePrefix={'selector'}
           styles={customStyles}
           isMulti
           value={(()=>{
-            let parentIds = stateOf.findParents(phase.id);
-            return parentIds.map((parentId)=>
-              ({label:stateOf.getNameById('stage',parentId), value:parentId}));
+            let parentIds = stateOf.findParents(phase.identity.value);
+            return parentIds.map((parentId:string) =>
+              stateOf.getNameById('stage',parentId));
           })()}
-          options={stateOf.stages.map(stage=>{
-            let stageName = stateOf.stages.reduce((acc,curr)=>
-              (curr.id==stage.id) ? curr.name : acc,'');
-            return {label: stageName, value: stage.id}
-          })}
+          options={stateOf.stages.map(stage=>stage.identity)}
           onChange={(stages,type) => {
             if (type.action=='select-option') {
-              stateOf.addLink(type.option.value,phase.id);
+              stateOf.addLink(type.option.value,phase.identity.value);
             } else if (type.action=='remove-value') {
-              stateOf.removeLink(type.removedValue.value,phase.id);
+              stateOf.unLink(type.removedValue.value,phase.identity.value);
             } else if (type.action=='clear') {
-              stateOf.removeLink(null,phase.id);
+              stateOf.unLink(null,phase.identity.value);
             }
           }}
         />
@@ -162,49 +154,22 @@ export function drawPhase(
           styles={customStyles}
           isClearable
           value={(()=>{
-            let childIds = stateOf.findChildren(phase.id);
+            let childIds = stateOf.findChildren(phase.identity.value);
             return childIds.map((childId)=>
-              ({label:stateOf.getNameById('round',childId), value:childId}));
+              stateOf.getNameById('round',childId));
           })()}
-          options={stateOf.rounds.map((round)=>
-            ({label:round.name, value:round.id}))
-          }          
+          options={stateOf.rounds.map((round)=>round.identity)}
           onChange={(round,type)=>{
-            //stateOf.changer('phase',row,{round});
-            stateOf.removeLink(phase.id,null);
+            stateOf.changer('phase',row,{round});
+            stateOf.unLink(phase.identity.value,null);
             if (type.action=='select-option') {
-              stateOf.addLink(phase.id,round.value);
+              stateOf.addLink(phase.identity.value,round.value);
             }
           }}
         />
 
         <label className={`${css.head} ${SHOW_ID}`}>Round Id:</label>
         <div className={`${css.identity} ${SHOW_ID}`}>{phase.round && phase.round.value}</div>
-  
-        <label className={css.head}>Turn Name:</label>
-        <Select
-          className={css.selector}
-          styles={customStyles}
-          isClearable
-          value={(()=>{
-            let childIds = stateOf.findChildren(phase.id);
-            return childIds.map((childId)=>
-              ({label:stateOf.getNameById('turn',childId), value:childId}));
-          })()}
-          options={stateOf.turns.map((turn)=>
-            ({label:turn.name, value:turn.id}))
-          }          
-          onChange={(turn,type)=>{
-            stateOf.changer('phase',row,{turn});
-            stateOf.removeLink(phase.id,null);
-            if (type.action=='select-option') {
-              stateOf.addLink(phase.id,turn.value);
-            }
-          }}
-        />
-
-        <label className={`${css.head} ${SHOW_ID}`}>Turn Id:</label>
-        <div className={`${css.identity} ${SHOW_ID}`}>{phase.turn && phase.turn.value}</div>
   
       </div>
       {flowEditor(stateOf,'phase',row)}

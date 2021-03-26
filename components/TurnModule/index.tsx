@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+//import { v4 as uuidv4 } from 'uuid';
 import Draggable from 'react-draggable';
-import { capitalizeFirstLetter } from '../common/naming';
+//import { capitalizeFirstLetter } from '../common/naming';
 import css from './turn.module.css';
 
 /**
@@ -11,7 +11,7 @@ import css from './turn.module.css';
  * The TMI uses four kinds of structures to coordinate the flow of the game:
  * stages, phases, rounds, turns, and steps
  */
-const FLOW_PARTS = ['stage','phase','round','turn','step'];
+export const FLOW_PARTS = ['stage','phase','round','turn','step'];
 const TESTING = true;
 
 /**
@@ -71,6 +71,8 @@ import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 // this returns the action module state so we can get a list of actions
 import { ActionModuleParams, ActionModuleState } from '../ActionModule';
 
+import { model, addLink, unLink, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, getNameById, clear, clearAll, quickStart } from './functions';
+
 // this interface holds the list of acceptable options for flowPart
 export interface FlowPartOptions {
   testing?: boolean;
@@ -113,7 +115,7 @@ export interface TurnModuleParams {
   // functions!
   model: Function;
   addLink: Function;
-  removeLink: Function;
+  unLink: Function;
   findChildren: Function;
   findParents: Function;
   addPart: Function;
@@ -121,8 +123,8 @@ export interface TurnModuleParams {
   moveUp: Function;
   moveDown: Function;
   changer: Function;
-  namesExist: Function;
-  ItemsExistIn: Function;
+  //namesExist: Function;
+  //ItemsExistIn: Function;
   getNameById: Function;
   initialize: Function;
   quickStart: Function;
@@ -172,296 +174,27 @@ export function TurnModuleState(){
     actionModule: ActionModuleState(),
 
     // returns the current model state of the TMI. Immutable.
-    model: () => {
-      return {
-        stages: JSON.parse(JSON.stringify(stateOf.stages)),
-        phases: JSON.parse(JSON.stringify(stateOf.phases)),
-        rounds: JSON.parse(JSON.stringify(stateOf.rounds)),
-        turns: JSON.parse(JSON.stringify(stateOf.turns)),
-        steps: JSON.parse(JSON.stringify(stateOf.steps))
-      };
-    },
+    model: () => model(stateOf),
 
-    // creates a link between flowTypes, designating one as the parent and the other as the child
-    addLink: (parentId: string, childId: string) => {
-      let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
-      let linkParents = stateOf.linkParents.slice();
-      let linkChildren = stateOf.linkChildren.slice();
-      let parentRow = linkParents.indexOf(parentId);
-      let childCol = linkChildren.indexOf(childId);
-  
-      // if the parent row doesn't exist on table, add it
-      if (parentRow==-1){
-        parentRow = linkParents.length;
-        linkParents[parentRow] = parentId;
-        linkTable[parentRow] = Array(linkChildren.length).fill(false);
-      }
+    // creates or destroys familial links between flowParts
+    addLink: (parentId: string, childId: string) => addLink(stateOf,parentId,childId),
+    unLink: (parentId: string, childId: string) => unLink(stateOf,parentId,childId), 
 
-      // if the child column doesn't exist on table, add it
-      if (childCol==-1){
-        childCol = linkChildren.length;
-        linkChildren[childCol] = childId;
-        for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = false;
-      }
+    // returns the IDs of familial links
+    findChildren: (parentId:string) => findChildren(stateOf,parentId),
+    findParents: (childId: string) => findParents(stateOf,childId),
 
-      linkTable[parentRow][childCol] = true;
-
-      console.log('PARENTS: ',linkParents);
-      console.log('CHILDREN: ',linkChildren);
-      console.log('LINKTABLE: ',linkTable);
-
-      // save the updated link data
-      stateOf.setLinkTable(linkTable);
-      stateOf.setLinkParents(linkParents);
-      stateOf.setLinkChildren(linkChildren);
-    },
-
-    removeLink: (parentId: string, childId: string) => {
-      let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
-      let linkParents = stateOf.linkParents.slice();
-      let linkChildren = stateOf.linkChildren.slice();
-      let parentRow = linkParents.indexOf(parentId);
-      let childCol = linkChildren.indexOf(childId);
-
-      // Set the corresponding links to false
-      if (parentRow>-1 && childCol>-1) {
-        linkTable[parentRow][childCol] = false;
-      } else if (parentRow>-1) {
-        // remove all children of this row
-        for (let c=0;c<linkChildren.length;c++) linkTable[parentRow][c]=false;
-      } else if (childCol>-1) {
-        // remove all parents of this column
-        for (let r=0;r<linkParents.length;r++) linkTable[r][childCol]=false;
-      }
-
-      // trim rows where necessary
-      for (let r=linkParents.length-1;r>-1;r--) {
-        let empty=true;
-        for (let c=0;c<linkChildren.length;c++) {
-          if (linkTable[r][c]==true) empty=false;
-        }
-        if (empty) {
-          linkParents.splice(r,1);
-          linkTable.splice(r,1);
-        }
-      }
-
-      // trim columns where necessary
-      for (let c=linkChildren.length-1;c>-1;c--) {
-        let empty=true;
-        for (let r=0;r<linkParents.length;r++) {
-          if (linkTable[r][c]==true) empty=false;
-        }
-        if (empty) {
-          linkChildren.splice(c,1);
-          for (let r=0;r<linkParents.length;r++) {
-            linkTable[r].splice(c,1);
-          }
-        }
-      }
-
-      console.log('PARENTS: ',linkParents);
-      console.log('CHILDREN: ',linkChildren);
-      console.log('LINKTABLE: ',linkTable);
-
-      // save the updated link data
-      stateOf.setLinkTable(linkTable);
-      stateOf.setLinkParents(linkParents);
-      stateOf.setLinkChildren(linkChildren);
-    },
-
-    // returns the children IDs of the given parent
-    findChildren: (parentId:string) => {
-      //console.log('LINK TABLE: ',stateOf.linkTable);
-      let r = stateOf.linkParents.reduce((acc,curr,index)=>{
-        if (curr==parentId) return index;
-        return acc;
-      },-1);
-      let children=[];
-      if (r>-1) {
-        stateOf.linkChildren.forEach((child,c)=>{
-          if (stateOf.linkTable[r][c]==true) children.push(child);
-        });
-      }
-      return children;
-    },
-
-    // returns the parent ID's of the given child
-    findParents: (childId: string) => {
-      let c = stateOf.linkChildren.reduce((acc,curr,index)=>{
-        if (curr==childId) return index;
-        return acc;
-      },-1);
-      let parents=[];
-      if (c>-1) {
-        stateOf.linkParents.forEach((parent,r)=>{
-          if (stateOf.linkTable[r][c]==true) parents.push(parent);
-        });
-      }
-      return parents;
-    },
-
-    // allows the client to add new flow members of the TMI state
-    addPart: (flowPart: string, row: number) => {
-
-      // TODO: add the new thing at a particular index location
-      return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-          // initial immutable TMI state copy
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-
-          // check for too many members
-          if (flowParts.length>9) return reject(`Can't have more than 10 ${flowPart}s`);
-
-          // create a new flow part for the TMI
-          let thing = 
-            flowPart=='stage' ? JSON.parse(JSON.stringify(NEW_STAGE)) : 
-            flowPart=='phase' ? JSON.parse(JSON.stringify(NEW_PHASE)) : 
-            flowPart=='round' ? JSON.parse(JSON.stringify(NEW_ROUND)) :
-            flowPart=='turn' ? JSON.parse(JSON.stringify(NEW_TURN)) :
-            flowPart=='step' ? JSON.parse(JSON.stringify(NEW_STEP)) : {};
-          thing.id = uuidv4();
-
-          // put the new flow part in the state copy
-          flowParts.splice(row+1,0,thing);
-
-          // replace the original TMI with the new version
-          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-          // return true when the function operated correctly
-          return resolve();
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });
-    },
+    // allows the client to add, remove, and rearrange flow parts
+    addPart: (flowPart: string, row: number) => addPart(stateOf,flowPart,row),
+    killPart: (flowPart: string, row:number) => killPart(stateOf,flowPart,row),
+    moveUp: (flowPart: string, row:number) => moveUp(stateOf,flowPart,row),
+    moveDown: (flowPart: string, row:number) => moveDown(stateOf,flowPart,row),
     
-    // allows the client to remove a flow member from the TMI state
-    killPart: (flowPart: string, row:number) => {
-      return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-          // initial immutable TMI state copy
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-  
-          // check for too many members
-          if (flowParts.length==1) return reject(`Can't have less than 1 ${flowPart}s`);
-
-          // remove the intended thing from the TNI
-          flowParts.splice(row,1);
-
-          // replace the original TMI with the new version
-          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-          // return true when the function operated correctly
-          return resolve();
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });
-    },
+    // allows us to change individual key-value pairs of a flowPart
+    changer: (flowPart: string, row: number, obj: object) => changer(stateOf,flowPart,row,obj),
     
-    // move this thing up in the list
-    moveUp: (flowPart: string, row:number) => {
-      return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-          // initial immutable TMI state copy
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-  
-          // move the thing up a row
-          flowParts.splice(row-1, 0, flowParts.splice(row, 1)[0]);
-  
-          // replace the original TMI with the new version
-          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-          // return true when the function operated correctly
-          return resolve();
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });
-    },
-    
-    // move this thing down in the list
-    moveDown: (flowPart: string, row:number) => {
-      return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-          // initial immutable TMI state copy
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-  
-          // move the thing up a row
-          flowParts.splice(row+1, 0, flowParts.splice(row, 1)[0]);
-  
-          // replace the original TMI with the new version
-          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-          // return true when the function operated correctly
-          return resolve();
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });
-    },
-    
-    // allows us to change individual parameters of a flowPart
-    changer: (
-      flowPart: string,
-      row: number,
-      obj: object
-    ) => {
-      return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-          flowParts[row] = Object.assign(flowParts[row],obj);
-          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-          return resolve();
-        }
-        return reject (`${flowPart} is not an approved flow mechanism`);
-      });
-    },
-    
-    // checks a particular flowPart list to see if a name if one or more names is present there
-    namesExist: ( flowPart: string, names: Array<string>) => {
-      return new Promise<Array<string>>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-          
-          // returns a lowercase list of all the names within this flowPart
-          let partNames = flowParts.map((thing:any)=>thing.name.toLowerCase());
-
-          // returns a list of just the names shared in common
-          let common = names.filter((s:string)=>partNames.includes(s.toLowerCase()));
-          return resolve(common);
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });
-    },
-
-    // checks a particular kind of flowpart to see if 
-    ItemsExistIn: ( flowPart: string, items: Array<any>) => {
-      return new Promise<Array<any>>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-
-          // returns a list of the IDs from the mebmers of this flowPart list
-          let IDs = flowParts.map((flowPart:any)=>flowPart.id);
-
-          // creates a list of the id's in common
-          let common = items.filter((item:any) => IDs.includes(item.value));
-
-          return resolve(common);
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });      
-    },
-    
-    // retrieves the name of a flow part using the flow part type and id number 
-    getNameById: ( flowPart: string, id: string) => {
-      if (FLOW_PARTS.indexOf(flowPart)>-1) {
-        return stateOf[`${flowPart}s`].reduce((acc,curr)=>{
-            return (curr.id==id) ? curr.name : acc;
-          },'');
-      } else return '';
-    },
+    // retrieves the current name of a flow part using the flow part type and id number 
+    getNameById: ( flowPart: string, id: string) => getNameById(stateOf,flowPart,id),
 
     // initialize creates a flow part in each bucket using the add function
     initialize: () => {
@@ -475,90 +208,12 @@ export function TurnModuleState(){
       }
     },
     
-    // this resets all the flow parts and provides a simple game framework
-    quickStart: () => {
-      let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
-      newStage.name = 'Stage01';
-      newStage.description = 'This game has only one stage';
-
-      let newPhase = JSON.parse(JSON.stringify(stateOf.phases[0]));
-      newPhase.name = 'Phase01';
-      newPhase.description = 'This game has only one phase';
-//      stateOf.addLink(newStage.id,newPhase.id);
-
-      let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
-      newRound.name = 'Round01';
-      newRound.description = 'This game has only one kind of Round';
-      newRound.type = 'fixed';
-//      stateOf.addLink(newPhase.id,newRound.id);
-
-      let newTurn = JSON.parse(JSON.stringify(stateOf.turns[0]));
-      newTurn.name = 'Turn01';
-      newTurn.description = 'This game has only one type of turn';
-      //stateOf.addLink(newPhase.id,newTurn.id);
-
-      let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
-      newStep.name = 'Step01';
-
-      stateOf.setStages([newStage]);
-      stateOf.setPhases([newPhase]);
-      stateOf.setRounds([newRound]);
-      stateOf.setTurns([newTurn]);
-      stateOf.setSteps([newStep]);
-
-      stateOf.addLink(newStage.id,newPhase.id);
-      stateOf.addLink(newPhase.id,newRound.id);
-
-    },
+    // sets all flow parts to a simple, default game framework
+    quickStart: () => quickStart(stateOf),
     
-    // clear removes all the details from a single flowPart except the id
-    clear: (flowPart: string) => {
-      return new Promise<void>((resolve,reject)=>{
-        if (FLOW_PARTS.indexOf(flowPart)>-1) {
-          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-
-          const newFlowParts = flowParts.map(thing => {
-            let newThing;
-            switch(flowPart) {
-              case "stage":
-                newThing = JSON.parse(JSON.stringify(NEW_STAGE));
-                newThing.id = thing.id;
-                break;
-              case "phase":
-                newThing = JSON.parse(JSON.stringify(NEW_PHASE));
-                newThing.id = thing.id;
-                break;
-              case "round":
-                newThing = JSON.parse(JSON.stringify(NEW_ROUND));
-                newThing.id = thing.id;
-                break;
-              case "turn":
-                newThing = JSON.parse(JSON.stringify(NEW_TURN));
-                newThing.id = thing.id;
-                break;
-              case "step":
-                newThing = JSON.parse(JSON.stringify(NEW_STEP));
-                newThing.id = thing.id;
-                break;
-            }
-            return newThing;
-          });
-          stateOf[`set${capitalizeFirstLetter(flowPart)}s`](newFlowParts);
-          return resolve();
-        }
-        return reject(`${flowPart} is not an approved flow mechanism`);
-      });
-    },
-    
-    // runs the clear function on every flowPart bucket
-    clearAll: () => {
-      FLOW_PARTS.forEach(flowPart => {
-        stateOf.clear(flowPart).catch((err)=>{
-          console.log(err);
-        });
-      });      
-    },
-
+    // removes details from one or more flow parts
+    clear: (flowPart: string) => clear(stateOf,flowPart),
+    clearAll: () => clearAll(stateOf),
   };
   
   // send that state object back

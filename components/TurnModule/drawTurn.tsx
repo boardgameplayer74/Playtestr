@@ -6,7 +6,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
 /**
- * Turn are the time window during which a single agent performs one or more 
+ * Turns are the time window during which a single agent performs one or more 
  * actions sequentially before another agent is allowed to act, though 
  * interrupts and reactions may alter this. Turns have one or more steps 
  * which define a particular order that actions must be taken in. 
@@ -24,6 +24,11 @@ interface TurnOption {
   value: string | boolean;  // a value that indicates which option was taken
 }
 
+interface Item {
+  label: string;
+  value: string;
+}
+
 /**
  * Turn are the time window during which a single agent performs one or more 
  * actions sequentially before another agent is allowed to act, though 
@@ -36,6 +41,7 @@ interface TurnOption {
 export interface Turn {
   id: string;                 // unique identifer for turn, generated
   name: string;               // human friendly name for the turn
+  identity: Item;             // uniquely identifies this Turn
   description: string;        // free test to describe the turn purpose
   type: string;               // one of a pre-defined list of Turn types
   stepFreeText: string;       // free text of step names
@@ -46,6 +52,7 @@ export interface Turn {
 export const NEW_TURN = {
   id: '',
   name: '',
+  identity: null,
   description: '',
   type: '',
   stepFreeText: '',
@@ -68,15 +75,29 @@ export function drawTurn(
         <label className={css.head}>Name:</label>
         <input 
           className={css.body} 
-          value={turn.name}
-          autoComplete="off"
+          value={turn.identity.label}
           onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-            stateOf.changer('turn',row,{name:phraseFormatter(evt.target.value)});
+            let identity = JSON.parse(JSON.stringify(turn.identity));
+            identity.label = phraseFormatter(evt.target.value);
+            stateOf.changer('turn',row,{identity});
           }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let identity = JSON.parse(JSON.stringify(turn.identity));
+              identity.label = turn.identity.label.trim();
+              stateOf.changer('turn',row,{identity});
+            }
+          }}
+          onBlur={()=>{
+            let identity = JSON.parse(JSON.stringify(turn.identity));
+            identity.label = turn.identity.label.trim();
+            stateOf.changer('turn',row,{identity});
+          }}        
         />
   
         <label className={css.head}>id:</label>
-        <div className={css.identity}>{turn.id}</div>
+        <div className={css.identity}>{turn.identity.value}</div>
   
         <label className={css.head}>Description:</label>
         <TextareaAutosize 

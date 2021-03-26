@@ -2,11 +2,11 @@ import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
 import { 
-  capitalizeFirstLetter, 
   camelToTitle, 
   phraseFormatter, 
   phraseListFormatter 
 } from '../common/naming';
+import Select from 'react-select';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
@@ -29,27 +29,36 @@ interface RoundOption {
   value: string | boolean;  // a value that indicates which option was taken
 }
 
+interface Item {
+  label: string;
+  value: string;
+}
+
 export interface Round {
   id: string;                 // unique identifer for round, generated
   name: string;               // human friendly name for the round
+  identity: Item;             // uniquely identifies this round
   description: string;        // free test to describe the round purpose
   type: string;               // one of a pre-defined list of Round types
   interruptFreeText: string;
   interrupts: Array<string>;  // list of actions allowed to interrupt a turn
   reactionFreeText: string;
   reactions: Array<string>;   // list of actions allowed to react to a turn
+  turn: Item;                 // holds the chosen turn type
   options: Array<RoundOption>; // list of options used with this round
 }
 
 export const NEW_ROUND = {
   id: '',
   name: '',
+  identity: null,
   description: '',
   type: '',
   interruptFreeText: '',
   interrupts: [],
   reactionFreeText: '',
   reactions: [],
+  turn: null,
   options: [],
 };
 
@@ -129,6 +138,25 @@ export function drawRound(
 ){
   // use this to hide the ID strings that appear in the TMI
   const SHOW_ID = options['testing']==true ? '' : css.noShow;
+  const customStyles = {
+    control: (provided, state) => {
+      //console.log('CONTROL: ',provided);
+      return Object.assign(provided,{
+        border: 'none',
+        backgroundColor: 'rgba(255,255,255,.4)'
+      });
+    },
+    option: (provided, state) => {
+      //console.log('OPTION: ',provided);
+      return Object.assign(provided,{
+        backgroundColor:'rgba(255,255,255,.4)'
+      });
+    },
+    singleValue: (provided, state) => {
+      //console.log('SINGLE_VALUE: ',provided);
+      return provided;
+    }
+  };
 
   return (
     <div className={css.cardSleeve} key={`round-${row}`}>
@@ -136,15 +164,29 @@ export function drawRound(
         <label className={css.head}>Name:</label>
         <input 
           className={css.body} 
-          value={round.name}
-          autoComplete="off"
+          value={round.identity.label}
           onChange={(evt: React.ChangeEvent<HTMLInputElement>)=>{
-            stateOf.changer('round',row,{name:phraseFormatter(evt.target.value)});
+            let identity = JSON.parse(JSON.stringify(round.identity));
+            identity.label = phraseFormatter(evt.target.value);
+            stateOf.changer('round',row,{identity});
           }}
+          onKeyDown={(evt: React.KeyboardEvent<HTMLInputElement>)=>{
+            if(evt.keyCode == 13) {
+              evt.preventDefault();
+              let identity = JSON.parse(JSON.stringify(round.identity));
+              identity.label = round.identity.label.trim();
+              stateOf.changer('round',row,{identity});
+            }
+          }}
+          onBlur={()=>{
+            let identity = JSON.parse(JSON.stringify(round.identity));
+            identity.label = round.identity.label.trim();
+            stateOf.changer('round',row,{identity});
+          }}        
         />
   
         <label className={css.head}>id:</label>
-        <div className={css.identity}>{round.id}</div>
+        <div className={css.identity}>{round.identity.value}</div>
   
         <label className={css.head}>Description:</label>
         <TextareaAutosize 
@@ -214,6 +256,29 @@ export function drawRound(
             stateOf.changer('round',row,{reactions,reactionFreeText:reactions.join(', ')});
           }}
         />
+  
+        <label className={css.head}>Turn Name:</label>
+        <Select
+          className={css.selector}
+          styles={customStyles}
+          isClearable
+          value={(()=>{
+            let childIds = stateOf.findChildren(round.identity.value);
+            return childIds.map((childId:string)=> 
+              stateOf.getNameById('turn',childId));
+          })()}
+          options={stateOf.turns.map((turn)=>turn.identity)}          
+          onChange={(turn,type)=>{
+            stateOf.changer('round',row,{turn});
+            stateOf.unLink(round.identity.value,null);
+            if (type.action=='select-option') {
+              stateOf.addLink(round.identity.value,turn.value);
+            }
+          }}
+        />
+
+        <label className={`${css.head} ${SHOW_ID}`}>Turn Id:</label>
+        <div className={`${css.identity} ${SHOW_ID}`}>{round.turn && round.turn.value}</div>
   
       </div>
       {flowEditor(stateOf,'round',row)}
