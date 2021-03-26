@@ -30,7 +30,7 @@ export default function flowEditor(
             ReactTooltip.hide();
             clearTimeout(timer);
           }, 6000);
-          stateOf.add(thing,row).catch(alert);
+          stateOf.addPart(thing,row).catch(alert);
         }}
       >+</button>
       <button 
@@ -46,7 +46,7 @@ export default function flowEditor(
             ReactTooltip.hide();
             clearTimeout(timer);
           }, 6000);
-          stateOf.remove(thing,row);
+          stateOf.killPart(thing,row);
         }}
       >-</button>
       <button 

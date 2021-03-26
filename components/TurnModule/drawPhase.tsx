@@ -1,7 +1,8 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams } from './index';
-import { phraseFormatter } from '../common/naming';
+import { TurnModuleParams, FlowPartOptions } from './index';
+import { phraseFormatter, phraseListFormatter, capitalizeWordListByKey } from '../common/naming';
+import Select from 'react-select';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
@@ -15,36 +16,68 @@ import css from './turn.module.css';
  * It's possible that phases get their actions from the embedded turns
  */
 
+interface Item {
+  label: string;
+  value: string;
+}
+
 export interface Phase {
   id: string;             // unique identifer for the phase, generated
   name: string;           // human friendly name for the phase
   description: string;    // free test to describe the phase purpose
-  actions: Array<string>; // list of actions available in the phase
-  roundName: string;      // the human-readable name of the round definition
-  roundId: string;        // the id of the round definition
-  turnName: string;       // human readable turn name
-  turnId: string;         // type of turn used in this phase
+  //stageFreeText: string;  // free text of the stages this phase can be found in
+  stages: Array<string>;  // list of stages this phase can be found in
+  actions: Array<Item>; // list of actions available in the phase
+  //roundName: string;      // the human-readable name of the round definition
+  //roundId: string;        // the id of the round definition
+  round: Item;            // holds the chosen round type
+  //turnName: string;       // human readable turn name
+  //turnId: string;         // type of turn used in this phase
+  turn: Item;             // holds the chosen turn type
 }
 
 export const NEW_PHASE = {
   id: '',
   name: '',
   description: '',
+  //stageFreeText: '',
+  stages: [],
   actions: [],
-  roundName: '',
-  roundId: '',
-  turnName: '',
-  turnId: '',
+  //roundName: '',
+  //roundId: '',
+  round: null,
+  //turnName: '',
+  //turnId: '',
+  turn: null,
 };
  
 export function drawPhase(
   stateOf: TurnModuleParams,
   phase: Phase,
   row: number,
-  options?: object,
+  options?: FlowPartOptions,
 ){
   // use this to hide the ID strings that appear in the TMI
   const SHOW_ID = options['testing']==true ? '' : css.noShow;
+  const customStyles = {
+    control: (provided, state) => {
+      //console.log('CONTROL: ',provided);
+      return Object.assign(provided,{
+        border: 'none',
+        backgroundColor: 'rgba(255,255,255,.4)'
+      });
+    },
+    option: (provided, state) => {
+      //console.log('OPTION: ',provided);
+      return Object.assign(provided,{
+        backgroundColor:'rgba(255,255,255,.4)'
+      });
+    },
+    singleValue: (provided, state) => {
+      //console.log('SINGLE_VALUE: ',provided);
+      return provided;
+    }
+  };
 
   return (
     <div className={css.cardSleeve} key={`phase-${row}`}>
@@ -80,56 +113,98 @@ export function drawPhase(
           }}
         />
   
-        <label className={css.head}>Actions:</label>
-        <div className={css.body}>{phase.actions.join(', ')}</div>
-  
-        <label className={css.head}>Round Name:</label>
-        <select
-          className={css.body} 
-          value={phase.roundId}
-          onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-            let roundId = evt.target.value;
-            let roundName = stateOf.rounds.reduce((acc,curr)=>{
-              return (curr.id==roundId) ? curr.name : acc;
-            },'');
-            stateOf.changer('phase',row,{roundId,roundName});
-          }}
-        >
-          <option value="Please Choose">Please Choose</option>
-          {stateOf.rounds.length && stateOf.rounds.map((round,index) => {
-            return (<option 
-              key={`choose-round-${index}`}
-              value={round.id}
-            >{round.name}</option>)
+        <label className={css.head}>Parent Stages:</label>
+        <Select 
+          className={css.selector}
+          classNamePrefix={'selector'}
+          styles={customStyles}
+          isMulti
+          value={(()=>{
+            let parentIds = stateOf.findParents(phase.id);
+            return parentIds.map((parentId)=>
+              ({label:stateOf.getNameById('stage',parentId), value:parentId}));
+          })()}
+          options={stateOf.stages.map(stage=>{
+            let stageName = stateOf.stages.reduce((acc,curr)=>
+              (curr.id==stage.id) ? curr.name : acc,'');
+            return {label: stageName, value: stage.id}
           })}
-        </select>
-  
+          onChange={(stages,type) => {
+            if (type.action=='select-option') {
+              stateOf.addLink(type.option.value,phase.id);
+            } else if (type.action=='remove-value') {
+              stateOf.removeLink(type.removedValue.value,phase.id);
+            } else if (type.action=='clear') {
+              stateOf.removeLink(null,phase.id);
+            }
+          }}
+        />
+
+        <label className={css.head}>Actions:</label>
+        <Select
+          className={css.selector}
+          styles={customStyles}
+          isMulti
+          value={phase.actions}
+          options={stateOf.actionModule.getActions()}
+          onChange={(actions,type)=>{
+            stateOf.changer('phase',row,{actions});
+            if (type.action=='select-option') {
+            } else if (type.action=='remove-value') {
+            } else if (type.action=='clear') {
+            }
+          }}
+        />
+
+        <label className={css.head}>Round Name:</label>
+        <Select
+          className={css.selector}
+          styles={customStyles}
+          isClearable
+          value={(()=>{
+            let childIds = stateOf.findChildren(phase.id);
+            return childIds.map((childId)=>
+              ({label:stateOf.getNameById('round',childId), value:childId}));
+          })()}
+          options={stateOf.rounds.map((round)=>
+            ({label:round.name, value:round.id}))
+          }          
+          onChange={(round,type)=>{
+            //stateOf.changer('phase',row,{round});
+            stateOf.removeLink(phase.id,null);
+            if (type.action=='select-option') {
+              stateOf.addLink(phase.id,round.value);
+            }
+          }}
+        />
+
         <label className={`${css.head} ${SHOW_ID}`}>Round Id:</label>
-        <div className={`${css.identity} ${SHOW_ID}`}>{phase.roundId}</div>
+        <div className={`${css.identity} ${SHOW_ID}`}>{phase.round && phase.round.value}</div>
   
         <label className={css.head}>Turn Name:</label>
-        <select 
-          className={css.body} 
-          value={phase.turnId}
-          onChange={(evt: React.ChangeEvent<HTMLSelectElement>)=>{
-            let turnId = evt.target.value;
-            let turnName = stateOf.turns.reduce((acc,curr)=>{
-              return (curr.id==turnId) ? curr.name : acc;
-            },'');
-            stateOf.changer('phase',row,{turnId,turnName});
+        <Select
+          className={css.selector}
+          styles={customStyles}
+          isClearable
+          value={(()=>{
+            let childIds = stateOf.findChildren(phase.id);
+            return childIds.map((childId)=>
+              ({label:stateOf.getNameById('turn',childId), value:childId}));
+          })()}
+          options={stateOf.turns.map((turn)=>
+            ({label:turn.name, value:turn.id}))
+          }          
+          onChange={(turn,type)=>{
+            stateOf.changer('phase',row,{turn});
+            stateOf.removeLink(phase.id,null);
+            if (type.action=='select-option') {
+              stateOf.addLink(phase.id,turn.value);
+            }
           }}
-        >
-          <option value="Please Choose">Please Choose</option>
-          {stateOf.turns.length && stateOf.turns.map((turn,index) => {
-            return (<option 
-              key={`choose-turn-${index}`}
-              value={turn.id}
-            >{turn.name}</option>)
-          })}
-        </select>
-  
+        />
+
         <label className={`${css.head} ${SHOW_ID}`}>Turn Id:</label>
-        <div className={`${css.identity} ${SHOW_ID}`}>{phase.turnId}</div>
+        <div className={`${css.identity} ${SHOW_ID}`}>{phase.turn && phase.turn.value}</div>
   
       </div>
       {flowEditor(stateOf,'phase',row)}

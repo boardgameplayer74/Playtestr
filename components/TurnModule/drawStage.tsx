@@ -1,13 +1,17 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams } from './index';
+import { TurnModuleParams, FlowPartOptions } from './index';
 import { 
   phraseFormatter, 
   phraseListFormatter, 
   capitalizeWordListByKey 
 } from '../common/naming';
+import Select from 'react-select';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
+
+// this returns the rule module state so we can get a list of rules
+import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 
 /**
  * Stages are the largest structure in game flow, and are responsible for 
@@ -26,25 +30,30 @@ interface PhaseCycle {
   trigger: Array<string>; // an array of trigger events that will end the cycle
 }
 
+interface item {
+  value: string;
+  label: string;
+}
+
 export interface Stage {
   id: string;                     // unique identifier for the stage, generated
   name: string;                   // human friendly name for the stage
   description: string;            // free test to describe the stage purpose
-  phaseFreeText: string;          // free text of phase names
+  //phaseFreeText: string;          // free text of phase names
   phases: Array<string>;          // list of phases in the stage
   phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
-  ruleFreeText: string;           // free text of rule names
-  rules: Array<string>;           // list of rules used in this stage (?)
+  //ruleFreeText: string;           // free text of rule names
+  rules: Array<item>;             // list of rules used in this stage (?)
 }
 
 export const NEW_STAGE = {
   id: '',
   name: '',
   description: '',
-  phaseFreeText: '',
+  //phaseFreeText: '',
   phases: [],
   phaseCycles: [],
-  ruleFreeText: '',
+  //ruleFreeText: '',
   rules: [],
 };
 
@@ -52,10 +61,29 @@ export function drawStage(
   stateOf: TurnModuleParams,
   stage: Stage,
   row: number,
-  options?: object,
+  options?: FlowPartOptions,
 ){
   // use this to hide the ID strings that appear in the TMI
   const SHOW_ID = options['testing']==true ? '' : css.noShow;
+  const customStyles = {
+    control: (provided:any, state:any) => {
+      //console.log('CONTROL: ',provided);
+      return Object.assign(provided,{
+        border: 'none',
+        backgroundColor: 'rgba(255,255,255,.4)'
+      });
+    },
+    option: (provided:any, state:any) => {
+      //console.log('OPTION: ',provided);
+      return Object.assign(provided,{
+        backgroundColor:'rgba(255,255,255,.4)'
+      });
+    },
+    singleValue: (provided:any, state:any) => {
+      //console.log('SINGLE_VALUE: ',provided);
+      return provided;
+    }
+  };
 
   return (
     <div className={css.cardSleeve} key={`stage-${row}`}>
@@ -82,51 +110,45 @@ export function drawStage(
           }}
         />
 
-        <label className={css.head}>Phases:</label>
-        <TextareaAutosize 
-          className={css.body} 
-          minRows={2}
-          value={stage.phaseFreeText}
-          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-            stateOf.changer('stage',row,{phaseFreeText:evt.target.value});
-          }}
-          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-            if(evt.keyCode == 13) {
-              evt.preventDefault();
-              let phases = phraseListFormatter(stage.phaseFreeText);
-              stateOf.namesExist('phase',phases).then((common:any)=>{
-                let cPhases = capitalizeWordListByKey(phases,common);
-                stateOf.changer('stage',row,{phases,phaseFreeText:cPhases.join(', ')});
-              });
+        <label className={css.head}>Child Phases:</label>
+        <Select 
+          className={css.selector}
+          styles={customStyles}
+          isMulti
+          value={(()=>{
+            let childIds = stateOf.findChildren(stage.id);
+            return childIds.map((childId)=>
+              ({label:stateOf.getNameById('phase',childId), value:childId}));
+          })()}
+          options={stateOf.phases.map(phase=>{
+            let phaseName = stateOf.phases.reduce((acc,curr)=>
+              (curr.id==phase.id) ? curr.name : acc,'');
+            return {label: phaseName, value: phase.id}
+          })}
+          onChange={(phases,type) => {
+            if (type.action=='select-option') {
+              stateOf.addLink(stage.id,type.option.value);
+            } else if (type.action=='remove-value') {
+              stateOf.removeLink(stage.id,type.removedValue.value);
+            } else if (type.action=='clear') {
+              stateOf.removeLink(stage.id,null);
             }
-          }}
-          onBlur={()=>{
-            let phases = phraseListFormatter(stage.phaseFreeText);
-            stateOf.changer('stage',row,{phases, phaseFreeText:phases.join(', ')});
           }}
         />
 
         <label className={css.head}>Rules:</label>
-        <TextareaAutosize 
-          className={css.body} 
-          minRows={2}
-          value={stage.ruleFreeText}
-          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-            stateOf.changer('stage',row,{ruleFreeText:evt.target.value});
-          }}
-          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-            if(evt.keyCode == 13) {
-              evt.preventDefault();
-              let rules = phraseListFormatter(stage.ruleFreeText);
-              stateOf.namesExist('phase',rules).then((common:any)=>{
-                let cRules = capitalizeWordListByKey(rules,common);
-                stateOf.changer('stage',row,{rules,ruleFreeText:cRules.join(', ')});
-              });
+        <Select
+          className={css.selector}
+          styles={customStyles}
+          isMulti
+          value={stage.rules}
+          options={stateOf.ruleModule.getRules()}
+          onChange={(rules,type)=>{
+            stateOf.changer('stage',row,{rules});
+            if (type.action=='select-option') {
+            } else if (type.action=='remove-value') {
+            } else if (type.action=='clear') {
             }
-          }}
-          onBlur={()=>{
-            let rules = phraseListFormatter(stage.ruleFreeText);
-            stateOf.changer('stage',row,{rules,ruleFreeText:rules.join(', ')});
           }}
         />
       </div>

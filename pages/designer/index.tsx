@@ -3,6 +3,7 @@ import { Tab, Tabs, TabList, TabPanel, resetIdCounter } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import { TurnModuleState, turnModuleInterface } from '../../components/TurnModule';
 import { ActionModuleState, actionModuleInterface } from '../../components/ActionModule';
+import { RuleModuleState, ruleModuleInterface } from '../../components/RuleModule';
 
 /**
  * This is a server-side protected page.  User are not allowed to access it unless they are a member of at least one group
@@ -43,6 +44,7 @@ export default function designer() {
     // this snaps the state of the Turn Module Interface into the state object
     turnModule: TurnModuleState(),
     actionModule: ActionModuleState(),
+    ruleModule: RuleModuleState(),
   };
 
   return (
@@ -51,9 +53,11 @@ export default function designer() {
         <TabList>
           <Tab>Turn Module</Tab>
           <Tab>Action Module</Tab>
+          <Tab>Rule Module</Tab>
         </TabList>
         <TabPanel>{turnModuleInterface(stateOf.turnModule)}</TabPanel>
         <TabPanel>{actionModuleInterface(stateOf.actionModule)}</TabPanel>
+        <TabPanel>{ruleModuleInterface(stateOf.ruleModule)}</TabPanel>
       </Tabs>
     </div>
   );

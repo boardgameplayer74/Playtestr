@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams } from './index';
+import { TurnModuleParams, FlowPartOptions } from './index';
 import { 
   capitalizeFirstLetter, 
   camelToTitle, 
@@ -125,8 +125,11 @@ export function drawRound(
   stateOf: TurnModuleParams,
   round: Round,
   row: number,
-  options?: object,
+  options?: FlowPartOptions,
 ){
+  // use this to hide the ID strings that appear in the TMI
+  const SHOW_ID = options['testing']==true ? '' : css.noShow;
+
   return (
     <div className={css.cardSleeve} key={`round-${row}`}>
       <div className={`${css.card} ${css.round}`}>

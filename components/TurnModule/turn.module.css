@@ -132,7 +132,12 @@
   font-size: small;
 }
 .body {
-  padding: 0;
+  padding: 0 2px;
+}
+.selector__control {
+  background-color: transparent!important;
+  border: none!important;
+  border-style: none!important;
 }
 .identity {
   color: rgba(0,0,0,.4);

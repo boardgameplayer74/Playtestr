@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams } from './index';
+import { TurnModuleParams, FlowPartOptions } from './index';
 import { phraseFormatter, phraseListFormatter } from '../common/naming';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
@@ -28,12 +28,16 @@ export const NEW_STEP = {
   actions: [],
 };
 
+
 export function drawStep(
   stateOf: TurnModuleParams,
   step: Step,
   row: number,
-  options?: object,
+  options?: FlowPartOptions,
 ){
+  // use this to hide the ID strings that appear in the TMI
+  const SHOW_ID = options['testing']==true ? '' : css.noShow;
+
   return (
     <div className={css.cardSleeve} key={`step-${row}`}>
       <div className={`${css.card} ${css.step}`}>

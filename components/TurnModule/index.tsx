@@ -65,6 +65,17 @@ import { Phase, NEW_PHASE, drawPhase } from './drawPhase';
  */
 import { Stage, NEW_STAGE, drawStage } from './drawStage';
 
+// this returns the rule module state so we can get a list of rules
+import { RuleModuleParams, RuleModuleState } from '../RuleModule';
+
+// this returns the action module state so we can get a list of actions
+import { ActionModuleParams, ActionModuleState } from '../ActionModule';
+
+// this interface holds the list of acceptable options for flowPart
+export interface FlowPartOptions {
+  testing?: boolean;
+}
+
 /**
  * This exports the type we need for the parent module to interact with the TMI
  * This interface is really only used to type the part of the parent's state 
@@ -82,25 +93,41 @@ export interface TurnModuleParams {
   steps: Array<Step>;   // list of Steps used in the game
   setSteps: Function;   // function to change the saved steps
 
+  linkTable: Array<Array<boolean>>; // holds links between components
+  setLinkTable: Function;           // function to change the table
+  linkParents: Array<string>;
+  setLinkParents: Function;
+  linkChildren: Array<string>;
+  setLinkChildren: Function;
+
   initialized: boolean;
   setInitialized: Function;
 
   showInstructions: boolean;
   setShowInstructions: Function;
 
+  // state from other modules
+  ruleModule: RuleModuleParams;
+  actionModule: ActionModuleParams;
+
   // functions!
-  model: Function,
-  add: Function,
-  remove: Function,
-  moveUp: Function,
-  moveDown: Function,
-  changer: Function,
-  namesExist: Function,
-  getNameById: Function,
-  initialize: Function,
-  quickStart: Function,
-  clear: Function,
-  clearAll: Function,
+  model: Function;
+  addLink: Function;
+  removeLink: Function;
+  findChildren: Function;
+  findParents: Function;
+  addPart: Function;
+  killPart: Function;
+  moveUp: Function;
+  moveDown: Function;
+  changer: Function;
+  namesExist: Function;
+  ItemsExistIn: Function;
+  getNameById: Function;
+  initialize: Function;
+  quickStart: Function;
+  clear: Function;
+  clearAll: Function;
 }
 
 /**
@@ -115,6 +142,10 @@ export function TurnModuleState(){
   const [turns,setTurns] = useState([]);
   const [steps,setSteps] = useState([]);
 
+  const [linkTable,setLinkTable] = useState([]);
+  const [linkParents, setLinkParents] = useState([]);
+  const [linkChildren, setLinkChildren] = useState([]);
+
   // various state flags
   const [initialized, setInitialized] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -127,11 +158,18 @@ export function TurnModuleState(){
     turns, setTurns,
     steps, setSteps,
     
+    linkTable, setLinkTable,
+    linkParents, setLinkParents,
+    linkChildren, setLinkChildren,
+
     initialized,
     setInitialized,
 
     showInstructions, 
     setShowInstructions,
+
+    ruleModule: RuleModuleState(),
+    actionModule: ActionModuleState(),
 
     // returns the current model state of the TMI. Immutable.
     model: () => {
@@ -144,8 +182,127 @@ export function TurnModuleState(){
       };
     },
 
+    // creates a link between flowTypes, designating one as the parent and the other as the child
+    addLink: (parentId: string, childId: string) => {
+      let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
+      let linkParents = stateOf.linkParents.slice();
+      let linkChildren = stateOf.linkChildren.slice();
+      let parentRow = linkParents.indexOf(parentId);
+      let childCol = linkChildren.indexOf(childId);
+  
+      // if the parent row doesn't exist on table, add it
+      if (parentRow==-1){
+        parentRow = linkParents.length;
+        linkParents[parentRow] = parentId;
+        linkTable[parentRow] = Array(linkChildren.length).fill(false);
+      }
+
+      // if the child column doesn't exist on table, add it
+      if (childCol==-1){
+        childCol = linkChildren.length;
+        linkChildren[childCol] = childId;
+        for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = false;
+      }
+
+      linkTable[parentRow][childCol] = true;
+
+      console.log('PARENTS: ',linkParents);
+      console.log('CHILDREN: ',linkChildren);
+      console.log('LINKTABLE: ',linkTable);
+
+      // save the updated link data
+      stateOf.setLinkTable(linkTable);
+      stateOf.setLinkParents(linkParents);
+      stateOf.setLinkChildren(linkChildren);
+    },
+
+    removeLink: (parentId: string, childId: string) => {
+      let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
+      let linkParents = stateOf.linkParents.slice();
+      let linkChildren = stateOf.linkChildren.slice();
+      let parentRow = linkParents.indexOf(parentId);
+      let childCol = linkChildren.indexOf(childId);
+
+      // Set the corresponding links to false
+      if (parentRow>-1 && childCol>-1) {
+        linkTable[parentRow][childCol] = false;
+      } else if (parentRow>-1) {
+        // remove all children of this row
+        for (let c=0;c<linkChildren.length;c++) linkTable[parentRow][c]=false;
+      } else if (childCol>-1) {
+        // remove all parents of this column
+        for (let r=0;r<linkParents.length;r++) linkTable[r][childCol]=false;
+      }
+
+      // trim rows where necessary
+      for (let r=linkParents.length-1;r>-1;r--) {
+        let empty=true;
+        for (let c=0;c<linkChildren.length;c++) {
+          if (linkTable[r][c]==true) empty=false;
+        }
+        if (empty) {
+          linkParents.splice(r,1);
+          linkTable.splice(r,1);
+        }
+      }
+
+      // trim columns where necessary
+      for (let c=linkChildren.length-1;c>-1;c--) {
+        let empty=true;
+        for (let r=0;r<linkParents.length;r++) {
+          if (linkTable[r][c]==true) empty=false;
+        }
+        if (empty) {
+          linkChildren.splice(c,1);
+          for (let r=0;r<linkParents.length;r++) {
+            linkTable[r].splice(c,1);
+          }
+        }
+      }
+
+      console.log('PARENTS: ',linkParents);
+      console.log('CHILDREN: ',linkChildren);
+      console.log('LINKTABLE: ',linkTable);
+
+      // save the updated link data
+      stateOf.setLinkTable(linkTable);
+      stateOf.setLinkParents(linkParents);
+      stateOf.setLinkChildren(linkChildren);
+    },
+
+    // returns the children IDs of the given parent
+    findChildren: (parentId:string) => {
+      //console.log('LINK TABLE: ',stateOf.linkTable);
+      let r = stateOf.linkParents.reduce((acc,curr,index)=>{
+        if (curr==parentId) return index;
+        return acc;
+      },-1);
+      let children=[];
+      if (r>-1) {
+        stateOf.linkChildren.forEach((child,c)=>{
+          if (stateOf.linkTable[r][c]==true) children.push(child);
+        });
+      }
+      return children;
+    },
+
+    // returns the parent ID's of the given child
+    findParents: (childId: string) => {
+      let c = stateOf.linkChildren.reduce((acc,curr,index)=>{
+        if (curr==childId) return index;
+        return acc;
+      },-1);
+      let parents=[];
+      if (c>-1) {
+        stateOf.linkParents.forEach((parent,r)=>{
+          if (stateOf.linkTable[r][c]==true) parents.push(parent);
+        });
+      }
+      return parents;
+    },
+
     // allows the client to add new flow members of the TMI state
-    add: (flowPart: string, row: number) => {
+    addPart: (flowPart: string, row: number) => {
 
       // TODO: add the new thing at a particular index location
       return new Promise<void>((resolve,reject)=>{
@@ -180,7 +337,7 @@ export function TurnModuleState(){
     },
     
     // allows the client to remove a flow member from the TMI state
-    remove: (flowPart: string, row:number) => {
+    killPart: (flowPart: string, row:number) => {
       return new Promise<void>((resolve,reject)=>{
         if (FLOW_PARTS.indexOf(flowPart)>-1) {
 
@@ -278,6 +435,24 @@ export function TurnModuleState(){
         return reject(`${flowPart} is not an approved flow mechanism`);
       });
     },
+
+    // checks a particular kind of flowpart to see if 
+    ItemsExistIn: ( flowPart: string, items: Array<any>) => {
+      return new Promise<Array<any>>((resolve,reject)=>{
+        if (FLOW_PARTS.indexOf(flowPart)>-1) {
+          let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+
+          // returns a list of the IDs from the mebmers of this flowPart list
+          let IDs = flowParts.map((flowPart:any)=>flowPart.id);
+
+          // creates a list of the id's in common
+          let common = items.filter((item:any) => IDs.includes(item.value));
+
+          return resolve(common);
+        }
+        return reject(`${flowPart} is not an approved flow mechanism`);
+      });      
+    },
     
     // retrieves the name of a flow part using the flow part type and id number 
     getNameById: ( flowPart: string, id: string) => {
@@ -292,11 +467,11 @@ export function TurnModuleState(){
     initialize: () => {
       if (stateOf.initialized==false) {
         stateOf.setInitialized(true);
-        stateOf.add('stage',0);
-        stateOf.add('phase',0);
-        stateOf.add('round',0);
-        stateOf.add('turn',0);
-        stateOf.add('step',0);
+        stateOf.addPart('stage',0);
+        stateOf.addPart('phase',0);
+        stateOf.addPart('round',0);
+        stateOf.addPart('turn',0);
+        stateOf.addPart('step',0);
       }
     },
     
@@ -304,22 +479,23 @@ export function TurnModuleState(){
     quickStart: () => {
       let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
       newStage.name = 'Stage01';
-      newStage.phaseFreeText = 'Phase01';
-      newStage.phases = ['Phase01'];
+      newStage.description = 'This game has only one stage';
 
       let newPhase = JSON.parse(JSON.stringify(stateOf.phases[0]));
       newPhase.name = 'Phase01';
+      newPhase.description = 'This game has only one phase';
+//      stateOf.addLink(newStage.id,newPhase.id);
 
       let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
       newRound.name = 'Round01';
+      newRound.description = 'This game has only one kind of Round';
       newRound.type = 'fixed';
-      newPhase.roundName = newRound.name;
-      newPhase.roundId = newRound.id;
+//      stateOf.addLink(newPhase.id,newRound.id);
 
       let newTurn = JSON.parse(JSON.stringify(stateOf.turns[0]));
       newTurn.name = 'Turn01';
-      newPhase.turnName = newTurn.name;
-      newPhase.turnId = newTurn.id;
+      newTurn.description = 'This game has only one type of turn';
+      //stateOf.addLink(newPhase.id,newTurn.id);
 
       let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
       newStep.name = 'Step01';
@@ -329,6 +505,10 @@ export function TurnModuleState(){
       stateOf.setRounds([newRound]);
       stateOf.setTurns([newTurn]);
       stateOf.setSteps([newStep]);
+
+      stateOf.addLink(newStage.id,newPhase.id);
+      stateOf.addLink(newPhase.id,newRound.id);
+
     },
     
     // clear removes all the details from a single flowPart except the id
@@ -378,6 +558,7 @@ export function TurnModuleState(){
         });
       });      
     },
+
   };
   
   // send that state object back
@@ -425,6 +606,11 @@ export function turnModuleInterface(
   // initialize the state only on the browser
   if (process.browser) stateOf.initialize();
 
+  // sets the options for our modules
+  const options = {
+    testing:TESTING
+  }
+
   return (
     <div className={css.TMIContainer}>
       <div>
@@ -447,23 +633,23 @@ export function turnModuleInterface(
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Stages:</div>
-        {stateOf.stages.map((item: Stage, row:number) => drawStage(stateOf,item,row,{testing:TESTING}))}
+        {stateOf.stages.map((item: Stage, row:number) => drawStage(stateOf,item,row,options))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Phases:</div>
-        {stateOf.phases.map((item: Phase, row:number) => drawPhase(stateOf,item,row,{testing:TESTING}))}
+        {stateOf.phases.map((item: Phase, row:number) => drawPhase(stateOf,item,row,options))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Rounds:</div>
-        {stateOf.rounds.map((item: Round, row:number) => drawRound(stateOf,item,row,{testing:TESTING}))}
+        {stateOf.rounds.map((item: Round, row:number) => drawRound(stateOf,item,row,options))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Turns:</div>
-        {stateOf.turns.map((item: Turn, row:number) => drawTurn(stateOf,item,row,{testing:TESTING}))}
+        {stateOf.turns.map((item: Turn, row:number) => drawTurn(stateOf,item,row,options))}
       </div>
       <div className={css.cardBox}>
         <div className={css.cardTitle}>Steps:</div>
-        {stateOf.steps.map((item: Step, row:number) => drawStep(stateOf,item,row,{testing:TESTING}))}
+        {stateOf.steps.map((item: Step, row:number) => drawStep(stateOf,item,row,options))}
       </div>
       {TMIInstructions(stateOf)}
     </div>
