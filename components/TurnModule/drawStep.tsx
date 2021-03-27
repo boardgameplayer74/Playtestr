@@ -2,6 +2,8 @@ import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
 import { phraseFormatter, phraseListFormatter } from '../common/naming';
+//import Select from 'react-select';
+import { familySelector } from './selectors';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
@@ -19,8 +21,8 @@ interface Item {
 }
 
 export interface Step {
-  id: string;             // unique identifier for the Step, generated
-  name: string;           // human friendly name for the Step, changeable
+  //id: string;             // unique identifier for the Step, generated
+  //name: string;           // human friendly name for the Step, changeable
   identity: Item;         // uniquely identifies this step
   description: string;    // free test to describe the stage purpose
   actionFreeText;         // free text of action names
@@ -28,8 +30,8 @@ export interface Step {
 }
 
 export const NEW_STEP = {
-  id: '',
-  name: '',
+  //id: '',
+  //name: '',
   identity: null,
   description: '',
   actionFreeText: '',
@@ -106,6 +108,10 @@ export function drawStep(
             stateOf.changer('step',row,{actions,actionFreeText:actions.join(', ')});
           }}
         />
+
+        <label className={css.head}>Parent Turns:</label>
+        {familySelector(stateOf,step,'parent','turn')}
+
       </div>
       {flowEditor(stateOf,'step',row)}
     </div>

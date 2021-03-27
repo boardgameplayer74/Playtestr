@@ -21,7 +21,7 @@ const TESTING = true;
  * set of available actions.  
  * Some designers call steps "Sequential Phases" or sometimes even just phases.
  */
-import { Step, NEW_STEP, drawStep } from './drawStep';
+import { Step, drawStep } from './drawStep';
  
 /**
  * Turns are the time window during which a single agent performs one or more 
@@ -32,7 +32,7 @@ import { Step, NEW_STEP, drawStep } from './drawStep';
  * available actions are different
  * Turns are pre-defined structures that are selected by the designer 
  */
-import { Turn, NEW_TURN, drawTurn } from './drawTurn';
+import { Turn, drawTurn } from './drawTurn';
 
 /**
  * rounds are the game structure that determines the specific order in which 
@@ -43,7 +43,7 @@ import { Turn, NEW_TURN, drawTurn } from './drawTurn';
  * tracking component
  * Rounds are pre-defined structures that are selected by teh designer
  */
-import { Round, NEW_ROUND, drawRound } from './drawRound';
+import { Round, drawRound } from './drawRound';
 
 /**
  * Phases are the game structure that broadly determine which actions are 
@@ -54,7 +54,7 @@ import { Round, NEW_ROUND, drawRound } from './drawRound';
  * in the stage definition
  * It's possible that phases get their actions from the embedded turns
  */
-import { Phase, NEW_PHASE, drawPhase } from './drawPhase';
+import { Phase, drawPhase } from './drawPhase';
 
 /**
  * Stages are the largest structure in game flow, and are responsible for 
@@ -63,7 +63,7 @@ import { Phase, NEW_PHASE, drawPhase } from './drawPhase';
  * specialized "startup" and "cleanup" stages being the most common additional 
  * stages. However, games can have any positive number of stages.
  */
-import { Stage, NEW_STAGE, drawStage } from './drawStage';
+import { Stage, drawStage } from './drawStage';
 
 // this returns the rule module state so we can get a list of rules
 import { RuleModuleParams, RuleModuleState } from '../RuleModule';
@@ -71,11 +71,16 @@ import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 // this returns the action module state so we can get a list of actions
 import { ActionModuleParams, ActionModuleState } from '../ActionModule';
 
-import { model, addLink, unLink, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, getNameById, clear, clearAll, quickStart } from './functions';
+import { model, addLink, addLink2, unLink, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, getNameById, clear, clearAll, quickStart } from './functions';
 
 // this interface holds the list of acceptable options for flowPart
 export interface FlowPartOptions {
   testing?: boolean;
+}
+
+interface Item {
+  label: string;
+  value: string;
 }
 
 /**
@@ -102,6 +107,45 @@ export interface TurnModuleParams {
   linkChildren: Array<string>;
   setLinkChildren: Function;
 
+  /**
+   * the link table allows us to dynamically keep track of which components are
+   * connected together
+   */
+  link: {
+    sp: { 
+      table: Array<Array<boolean>>;
+      setTable: Function;
+      parents: Array<string>;
+      setParents: Function;
+      children: Array<string>;
+      setChildren: Function;
+    };
+    pr: { 
+      table: Array<Array<boolean>>;
+      setTable: Function;
+      parents: Array<string>;
+      setParents: Function;
+      children: Array<string>;
+      setChildren: Function;
+    };
+    rt: { 
+      table: Array<Array<boolean>>;
+      setTable: Function;
+      parents: Array<string>;
+      setParents: Function;
+      children: Array<string>;
+      setChildren: Function;
+    };
+    ts: { 
+      table: Array<Array<boolean>>;
+      setTable: Function;
+      parents: Array<string>;
+      setParents: Function;
+      children: Array<string>;
+      setChildren: Function;
+    };
+  }
+
   initialized: boolean;
   setInitialized: Function;
 
@@ -115,6 +159,7 @@ export interface TurnModuleParams {
   // functions!
   model: Function;
   addLink: Function;
+  addLink2: Function;
   unLink: Function;
   findChildren: Function;
   findParents: Function;
@@ -123,8 +168,6 @@ export interface TurnModuleParams {
   moveUp: Function;
   moveDown: Function;
   changer: Function;
-  //namesExist: Function;
-  //ItemsExistIn: Function;
   getNameById: Function;
   initialize: Function;
   quickStart: Function;
@@ -144,9 +187,24 @@ export function TurnModuleState(){
   const [turns,setTurns] = useState([]);
   const [steps,setSteps] = useState([]);
 
+  // hook functions for the link table
   const [linkTable,setLinkTable] = useState([]);
   const [linkParents, setLinkParents] = useState([]);
   const [linkChildren, setLinkChildren] = useState([]);
+
+  // hook functions for the new link table
+  const [sp,setSP] = useState([]);
+  const [pr,setPR] = useState([]);
+  const [rt,setRT] = useState([]);
+  const [ts,setTS] = useState([]);
+  const [spParents,setSPParents] = useState([]);
+  const [spChildren,setSPChildren] = useState([]);
+  const [prParents,setPRParents] = useState([]);
+  const [prChildren,setPRChildren] = useState([]);
+  const [rtParents,setRTParents] = useState([]);
+  const [rtChildren,setRTChildren] = useState([]);
+  const [tsParents,setSParents] = useState([]);
+  const [tsChildren, setTSChildren] = useState([]);
 
   // various state flags
   const [initialized, setInitialized] = useState(false);
@@ -164,6 +222,29 @@ export function TurnModuleState(){
     linkParents, setLinkParents,
     linkChildren, setLinkChildren,
 
+    link: {
+      sp: { 
+        table:sp, setTable:setSP ,
+        parents:spParents, setParents:setSPParents,
+        children:spChildren, setChildren:setSPChildren,
+      },
+      pr: { 
+        table:pr, setTable:setPR, 
+        parents:prParents, setParents:setPRParents,
+        children:prChildren, setChildren:setPRChildren,
+      },
+      rt: { 
+        table:rt, setTable:setRT, 
+        parents:rtParents, setParents:setRTParents,
+        children:rtChildren, setChildren:setRTChildren,
+      },
+      ts: { 
+        table:ts, setTable:setTS,
+        parents:tsParents, setParents:setSParents,
+        children:tsChildren, setChildren:setTSChildren,
+      },
+    },
+
     initialized,
     setInitialized,
 
@@ -178,11 +259,12 @@ export function TurnModuleState(){
 
     // creates or destroys familial links between flowParts
     addLink: (parentId: string, childId: string) => addLink(stateOf,parentId,childId),
+    addLink2: (parent: Item, child:Item) => addLink2(stateOf,parent,child),
     unLink: (parentId: string, childId: string) => unLink(stateOf,parentId,childId), 
 
     // returns the IDs of familial links
-    findChildren: (parentId:string) => findChildren(stateOf,parentId),
-    findParents: (childId: string) => findParents(stateOf,childId),
+    findChildren: (identity: Item) => findChildren(stateOf,identity),
+    findParents: (identity: Item) => findParents(stateOf,identity),
 
     // allows the client to add, remove, and rearrange flow parts
     addPart: (flowPart: string, row: number) => addPart(stateOf,flowPart,row),

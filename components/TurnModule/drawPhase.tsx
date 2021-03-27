@@ -3,6 +3,7 @@ import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
 import { phraseFormatter } from '../common/naming';
 import Select from 'react-select';
+import { familySelector } from './selectors';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
@@ -22,24 +23,24 @@ interface Item {
 }
 
 export interface Phase {
-  id: string;             // unique identifer for the phase, generated
-  name: string;           // human friendly name for the phase
+  //id: string;             // unique identifer for the phase, generated
+  //name: string;           // human friendly name for the phase
   identity: Item;         //  uniquely identifies this phase
   description: string;    // free test to describe the phase purpose
-  stages: Array<string>;  // list of stages this phase can be found in
+  //stages: Array<string>;  // list of stages this phase can be found in
   actions: Array<Item>; // list of actions available in the phase
-  round: Item;            // holds the chosen round type
+  //rounds: ArrayItem;            // holds the chosen round type
   //turn: Item;             // holds the chosen turn type
 }
 
 export const NEW_PHASE = {
-  id: '',
-  name: '',
+  //id: '',
+  //name: '',
   identity: null,
   description: '',
-  stages: [],
+  //stages: [],
   actions: [],
-  round: null,
+  //round: null,
   //turn: null,
 };
  
@@ -110,28 +111,6 @@ export function drawPhase(
           }}
         />
   
-        <label className={css.head}>Parent Stages:</label>
-        <Select 
-          className={css.selector}
-          styles={customStyles}
-          isMulti
-          value={(()=>{
-            let parentIds = stateOf.findParents(phase.identity.value);
-            return parentIds.map((parentId:string) =>
-              stateOf.getNameById('stage',parentId));
-          })()}
-          options={stateOf.stages.map(stage=>stage.identity)}
-          onChange={(stages,type) => {
-            if (type.action=='select-option') {
-              stateOf.addLink(type.option.value,phase.identity.value);
-            } else if (type.action=='remove-value') {
-              stateOf.unLink(type.removedValue.value,phase.identity.value);
-            } else if (type.action=='clear') {
-              stateOf.unLink(null,phase.identity.value);
-            }
-          }}
-        />
-
         <label className={css.head}>Actions:</label>
         <Select
           className={css.selector}
@@ -148,29 +127,12 @@ export function drawPhase(
           }}
         />
 
-        <label className={css.head}>Round Name:</label>
-        <Select
-          className={css.selector}
-          styles={customStyles}
-          isClearable
-          value={(()=>{
-            let childIds = stateOf.findChildren(phase.identity.value);
-            return childIds.map((childId)=>
-              stateOf.getNameById('round',childId));
-          })()}
-          options={stateOf.rounds.map((round)=>round.identity)}
-          onChange={(round,type)=>{
-            stateOf.changer('phase',row,{round});
-            stateOf.unLink(phase.identity.value,null);
-            if (type.action=='select-option') {
-              stateOf.addLink(phase.identity.value,round.value);
-            }
-          }}
-        />
+        <label className={css.head}>Parent Stages:</label>
+        {familySelector(stateOf,phase,'parent','stage')}
 
-        <label className={`${css.head} ${SHOW_ID}`}>Round Id:</label>
-        <div className={`${css.identity} ${SHOW_ID}`}>{phase.round && phase.round.value}</div>
-  
+        <label className={css.head}>Child Rounds:</label>
+        {familySelector(stateOf,phase,'child','round')}
+
       </div>
       {flowEditor(stateOf,'phase',row)}
     </div>

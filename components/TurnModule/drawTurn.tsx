@@ -1,7 +1,8 @@
 import React from 'react';
 import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
-import { phraseFormatter, phraseListFormatter } from '../common/naming';
+import { phraseFormatter } from '../common/naming';
+import { familySelector } from './selectors';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
@@ -39,24 +40,24 @@ interface Item {
  * Turns are pre-defined structures that are selected by the designer 
  */
 export interface Turn {
-  id: string;                 // unique identifer for turn, generated
-  name: string;               // human friendly name for the turn
+  //id: string;                 // unique identifer for turn, generated
+  //name: string;               // human friendly name for the turn
   identity: Item;             // uniquely identifies this Turn
   description: string;        // free test to describe the turn purpose
   type: string;               // one of a pre-defined list of Turn types
-  stepFreeText: string;       // free text of step names
-  steps: Array<string>;       // list of steps taken within a Turn
+  //stepFreeText: string;       // free text of step names
+  //steps: Array<Item>;       // list of steps taken within a Turn
   options: Array<TurnOption>; // list of options used with this turn
 }
 
 export const NEW_TURN = {
-  id: '',
-  name: '',
+  //id: '',
+  //name: '',
   identity: null,
   description: '',
   type: '',
-  stepFreeText: '',
-  steps: [],
+  //stepFreeText: '',
+  //steps: [],
   options: [],
 };
 
@@ -112,29 +113,15 @@ export function drawTurn(
         <label className={css.head}>type:</label>
         <div className={css.body}>{turn.type}</div>
   
-        <label className={css.head}>Steps:</label>
-        <TextareaAutosize 
-          className={css.body} 
-          minRows={2}
-          value={turn.stepFreeText}
-          onChange={(evt: React.ChangeEvent<HTMLTextAreaElement>)=>{
-            stateOf.changer('turn',row,{stepFreeText:evt.target.value});
-          }}
-          onKeyDown={(evt: React.KeyboardEvent<HTMLTextAreaElement>)=>{
-            if(evt.keyCode == 13) {
-              evt.preventDefault();
-              let steps = phraseListFormatter(turn.stepFreeText);
-              stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
-            }
-          }}
-          onBlur={()=>{
-            let steps = phraseListFormatter(turn.stepFreeText);
-            stateOf.changer('turn',row,{steps,stepFreeText:steps.join(', ')});
-          }}
-        />
-   
         <label className={css.head}>Options:</label>
         <div className={css.body}>{turn.options}</div>
+  
+        <label className={css.head}>Parent Rounds:</label>
+        {familySelector(stateOf,turn,'parent','round')}
+
+        <label className={css.head}>Child Steps:</label>
+        {familySelector(stateOf,turn,'child','step')}
+
       </div>
       {flowEditor(stateOf,'turn',row)}
     </div>

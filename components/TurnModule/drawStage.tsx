@@ -3,6 +3,7 @@ import flowEditor from './flowEditor';
 import { TurnModuleParams, FlowPartOptions } from './index';
 import { phraseFormatter } from '../common/naming';
 import Select from 'react-select';
+import { familySelector } from './selectors';
 import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
@@ -32,22 +33,22 @@ interface Item {
 }
 
 export interface Stage {
-  id: string;                     // unique identifier for the stage, generated
-  name: string;                   // human friendly name for the stage
+  //id: string;                     // unique identifier for the stage, generated
+  //name: string;                   // human friendly name for the stage
   identity: Item;                 // identifies this stage uniquely
   description: string;            // free test to describe the stage purpose
-  phases: Array<string>;          // list of phases in the stage
-  phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
+  //phases: Array<string>;          // list of phases in the stage
+  //phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
   rules: Array<Item>;             // list of rules used in this stage (?)
 }
 
 export const NEW_STAGE = {
-  id: '',
-  name: '',
+  //id: '',
+  //name: '',
   identity: null,
   description: '',
-  phases: [],
-  phaseCycles: [],
+  //phases: [],
+  //phaseCycles: [],
   rules: [],
 };
 
@@ -121,28 +122,6 @@ export function drawStage(
           }}
         />
 
-        <label className={css.head}>Child Phases:</label>
-        <Select 
-          className={css.selector}
-          styles={customStyles}
-          isMulti
-          value={(()=>{
-            let childIds = stateOf.findChildren(stage.identity.value);
-            return childIds.map((childId:string) =>
-              stateOf.getNameById('phase',childId));
-          })()}
-          options={stateOf.phases.map((phase)=>phase.identity)}
-          onChange={(phases,type) => {
-            if (type.action=='select-option') {
-              stateOf.addLink(stage.identity.value,type.option.value);
-            } else if (type.action=='remove-value') {
-              stateOf.unLink(stage.identity.value,type.removedValue.value);
-            } else if (type.action=='clear') {
-              stateOf.unLink(stage.identity.value,null);
-            }
-          }}
-        />
-
         <label className={css.head}>Rules:</label>
         <Select
           className={css.selector}
@@ -158,8 +137,12 @@ export function drawStage(
             }
           }}
         />
-      </div>
-      {flowEditor(stateOf,'stage',row)}
+
+        <label className={css.head}>Child Phases:</label>
+        {familySelector(stateOf,stage,'child','phase')}
+
+       </div>
+     {flowEditor(stateOf,'stage',row)}
     </div>
   );
 }

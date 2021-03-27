@@ -7,6 +7,11 @@ import { NEW_STAGE } from './drawStage';
 import { v4 as uuidv4 } from 'uuid';
 import { capitalizeFirstLetter } from '../common/naming';
 
+interface Item {
+  label: string;
+  value: string;
+}
+
 export const model = (stateOf:any) => {
   return {
     stages: JSON.parse(JSON.stringify(stateOf.stages)),
@@ -50,6 +55,75 @@ export const addLink = (stateOf:any, parentId: string, childId: string) => {
   stateOf.setLinkParents(linkParents);
   stateOf.setLinkChildren(linkChildren);
 };
+
+// this helper function returns the flow type of an identity
+const findFlowTypeById = (stateOf: any, identity: Item) => {
+  let flowType = FLOW_PARTS.reduce((result,flowType) => {
+    let isFlowPart = stateOf[`${flowType}s`].reduce((isPart,flowPart) =>
+      (flowPart.identity.value==identity.value) ? true : isPart,false);
+    return (isFlowPart==true) ? flowType : result;
+  },'');
+  return flowType;
+};
+
+// creates a link between flowTypes, designating one as the parent and the other as the child
+export const addLink2 = (stateOf:any, parent: Item, child: Item) => {
+  return new Promise<void>((resolve,reject)=>{
+
+    let parentType = findFlowTypeById(stateOf,parent);
+    if (parentType=='') return reject('Parent Not Found');
+    let childType = findFlowTypeById(stateOf,child);
+    if (childType=='') return reject('Child Not Found');
+    let table:string;
+  
+    switch (true) {
+      case (parentType=='stage' && childType=='phase'): table = 'sp'; break;
+      case (parentType=='phase' && childType=='round'): table = 'pr'; break;
+      case (parentType=='round' && childType=='turn'): table = 'rt'; break;
+      case (parentType=='turn' && childType=='step'): table = 'ts'; break;
+      default:
+        return reject(`Can't link these two flow parts`);
+    }
+
+    // get copies of the current link parents and children
+    let linkTable = JSON.parse(JSON.stringify(stateOf.link[table].table));
+    let linkParents = JSON.parse(JSON.stringify(stateOf.link[table].parents));
+    let linkChildren = JSON.parse(JSON.stringify(stateOf.link[table].children));
+  
+    // find where the parent and children live on those lists
+    let parentRow = linkParents.indexOf(parent.value);
+    let childCol = linkChildren.indexOf(child.value);
+
+    // if the parent row doesn't exist on table, add it with all false links
+    if (parentRow==-1){
+      parentRow = linkParents.length;
+      linkParents[parentRow] = parent.value;
+      linkTable[parentRow] = Array(linkChildren.length).fill(false);
+    }
+  
+    // if the child column doesn't exist on table, add it with all false links
+    if (childCol==-1){
+      childCol = linkChildren.length;
+      linkChildren[childCol] = child.value;
+      for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = false;
+    }
+  
+    // set the new link to true
+    linkTable[parentRow][childCol] = true;
+      
+    console.log(`LINK TYPE: ${parentType}x${childType}`);
+    console.log('PARENTS: ',linkParents);
+    console.log('CHILDREN: ',linkChildren);
+    console.log('LINKTABLE: ',linkTable);
+
+    // save the updated link data
+    stateOf.link[table].setTable(linkTable);
+    stateOf.link[table].setParents(linkParents);
+    stateOf.link[table].setChildren(linkChildren);
+    return resolve();
+  });
+};
+
 
 export const unLink = (stateOf: any, parentId: string, childId: string) => {
   let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
@@ -106,38 +180,74 @@ export const unLink = (stateOf: any, parentId: string, childId: string) => {
 };
 
 
-// returns the child ID's of the given parent
-export const findChildren = (stateOf:any, parentId:string) => {
-  //console.log('LINK TABLE: ',stateOf.linkTable);
+// retrieves the name of a flow part using the flow part type and id number 
+export const getNameById = (stateOf:any, flowPart: string, value: string) => {
+  if (FLOW_PARTS.indexOf(flowPart)>-1) {
+    return stateOf[`${flowPart}s`].reduce((acc:string,curr:any)=>{
+        return (curr.identity.value==value) ? curr.identity : acc;
+      },null);
+  } else return '';
+};
+
+
+// returns the children of any flow Part
+export const findChildren = (stateOf:any, identity: Item) => {
+  let children=[];
+
+  // finds the given identity in the parent list
   let r = stateOf.linkParents.reduce((acc:number,curr:string,index:number)=>{
-    if (curr==parentId) return index;
+    if (curr==identity.value) return index;
     return acc;
   },-1) as number;
-  let children=[];
+
+  // if this parent exists in the link table
   if (r>-1) {
-    stateOf.linkChildren.forEach((child:string,c:number)=>{
-      if (stateOf.linkTable[r][c]==true) children.push(child);
+    // search children list for members with links to this parent
+    stateOf.linkChildren.forEach((childId:string,c:number)=>{
+      if (stateOf.linkTable[r][c]==true) {
+        // if found, search through all flowParts for the child 
+        FLOW_PARTS.forEach((flowPart:string)=>{
+          let child = stateOf[`${flowPart}s`].reduce((acc:string,curr:any) =>
+            (curr.identity.value==childId) ? curr.identity : acc,null);
+          // if found, push the identity to the lst
+          if (child!=null) children.push(JSON.parse(JSON.stringify(child)));
+        });
+      }
     });
   }
+
+  // return the list of children
   return children;
 };
 
 
-// returns the parent ID's of the given child
-export const findParents = (stateOf:any, childId: string) => {
+// returns the parents of any flow part
+export const findParents = (stateOf:any, identity: Item) => {
+  let parents = [];
+  
+  // finds the given identity in the parent list
   let c = stateOf.linkChildren.reduce((acc:number,curr:string,index:number)=>{
-    if (curr==childId) return index;
-    return acc;
+    return (curr==identity.value) ? index : acc;
   },-1) as number;
-  let parents=[];
+
+  // if this child exists in the link table
   if (c>-1) {
-    stateOf.linkParents.forEach((parent:string,r:number)=>{
-      if (stateOf.linkTable[r][c]==true) parents.push(parent);
+    // search children list for members with links to this parent
+    stateOf.linkParents.forEach((parentId:string,r:number)=>{
+      if (stateOf.linkTable[r][c]==true) {
+        // if found, search through all flowParts for the child 
+        FLOW_PARTS.forEach((flowPart:string)=>{
+          let parent = stateOf[`${flowPart}s`].reduce((acc:string,curr:any) =>
+            (curr.identity.value==parentId) ? curr.identity : acc,null);
+          // if found, push the identity to the lst
+          if (parent!=null) parents.push(JSON.parse(JSON.stringify(parent)));
+        });
+      }
     });
   }
+  
   return parents;
 };
-
 
 
 export const addPart = (stateOf:any, flowPart: string, row: number) => {
@@ -252,15 +362,6 @@ export const changer = (stateOf:any, flowPart: string, row: number, obj: object)
   });
 };
 
-// retrieves the name of a flow part using the flow part type and id number 
-export const getNameById = (stateOf:any, flowPart: string, value: string) => {
-  if (FLOW_PARTS.indexOf(flowPart)>-1) {
-    return stateOf[`${flowPart}s`].reduce((acc:string,curr:any)=>{
-        return (curr.identity.value==value) ? curr.identity : acc;
-      },null);
-  } else return '';
-};
-
 // this resets all the flow parts and provides a simple game framework
 export const quickStart = (stateOf:any) => {
   let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
@@ -285,6 +386,7 @@ export const quickStart = (stateOf:any) => {
 
   let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
   newStep.identity.label = 'Step01';
+  newStep.description = `This game's turns have only one step`
 
   stateOf.setStages([newStage]);
   stateOf.setPhases([newPhase]);
@@ -292,7 +394,7 @@ export const quickStart = (stateOf:any) => {
   stateOf.setTurns([newTurn]);
   stateOf.setSteps([newStep]);
 
-  //stateOf.addLink(newStage.identity.value,newPhase.identity.value);
+  stateOf.addLink(newStage.identity.value,newPhase.identity.value);
   //stateOf.addLink(newPhase.identity.value,newRound.identity.value);
 };
 
