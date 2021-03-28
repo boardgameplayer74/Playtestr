@@ -99,18 +99,18 @@ export const addLink2 = (stateOf:any, parent: Item, child: Item) => {
     if (parentRow==-1){
       parentRow = linkParents.length;
       linkParents[parentRow] = parent.value;
-      linkTable[parentRow] = Array(linkChildren.length).fill(false);
+      linkTable[parentRow] = Array(linkChildren.length).fill(0);
     }
   
     // if the child column doesn't exist on table, add it with all false links
     if (childCol==-1){
       childCol = linkChildren.length;
       linkChildren[childCol] = child.value;
-      for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = false;
+      for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = 0;
     }
   
     // set the new link to true
-    linkTable[parentRow][childCol] = true;
+    linkTable[parentRow][childCol] = 1;
       
     console.log(`LINK TYPE: ${parentType} x ${childType}`);
     console.log('PARENTS: ',linkParents);
@@ -165,11 +165,54 @@ export const unLink2 = (stateOf: any, parent: Item, child: Item) => {
     let linkChildren = JSON.parse(JSON.stringify(stateOf.link[tableName].children));
 
     // find where the parent and children live on those lists
-    let parentRow = linkParents.indexOf(parent.value);
-    let childCol = linkChildren.indexOf(child.value);
+    let parentRow = parent==null ? null : linkParents.indexOf(parent.value);
+    let childCol = child==null ? null : linkChildren.indexOf(child.value);
 
-    console.log(`parent row: ${parentRow}, child column: ${childCol}`);
+    // Set the corresponding links to false
+    if (parentRow>-1 && childCol>-1) linkTable[parentRow][childCol] = 0;
+    else if (childCol==null) {
+      // remove all children of this row
+      for (let c=0;c<linkChildren.length;c++) linkTable[parentRow][c] = 0;
+    } else if (parentRow==null) {
+      // remove all parents of this column
+      for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = 0;
+    }
 
+    // trim rows where necessary
+    for (let r=linkParents.length-1;r>-1;r--) {
+      let empty=true;
+      for (let c=0;c<linkChildren.length;c++) {
+        if (linkTable[r][c]>0) empty=false;
+      }
+      if (empty) {
+        linkParents.splice(r,1);
+        linkTable.splice(r,1);
+      }
+    }
+
+    // trim columns where necessary
+    for (let c=linkChildren.length-1;c>-1;c--) {
+      let empty=true;
+      for (let r=0;r<linkParents.length;r++) {
+        if (linkTable[r][c]>0) empty=false;
+      }
+      if (empty) {
+        linkChildren.splice(c,1);
+        for (let r=0;r<linkParents.length;r++) {
+          linkTable[r].splice(c,1);
+        }
+      }
+    }
+
+    console.log(`LINK TYPE: ${parentType} x ${childType}`);
+    console.log('PARENTS: ',linkParents);
+    console.log('CHILDREN: ',linkChildren);
+    console.log('LINKTABLE: ',linkTable);
+
+    // save the updated link data
+    stateOf.link[tableName].setTable(linkTable);
+    stateOf.link[tableName].setParents(linkParents);
+    stateOf.link[tableName].setChildren(linkChildren);
     return resolve();
   });
 };
