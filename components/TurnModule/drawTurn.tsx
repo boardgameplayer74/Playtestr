@@ -40,24 +40,16 @@ interface Item {
  * Turns are pre-defined structures that are selected by the designer 
  */
 export interface Turn {
-  //id: string;                 // unique identifer for turn, generated
-  //name: string;               // human friendly name for the turn
   identity: Item;             // uniquely identifies this Turn
   description: string;        // free test to describe the turn purpose
   type: string;               // one of a pre-defined list of Turn types
-  //stepFreeText: string;       // free text of step names
-  //steps: Array<Item>;       // list of steps taken within a Turn
   options: Array<TurnOption>; // list of options used with this turn
 }
 
 export const NEW_TURN = {
-  //id: '',
-  //name: '',
   identity: null,
   description: '',
   type: '',
-  //stepFreeText: '',
-  //steps: [],
   options: [],
 };
 

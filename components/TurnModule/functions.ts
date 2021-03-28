@@ -74,21 +74,22 @@ export const addLink2 = (stateOf:any, parent: Item, child: Item) => {
     if (parentType=='') return reject('Parent Not Found');
     let childType = findFlowTypeById(stateOf,child);
     if (childType=='') return reject('Child Not Found');
-    let table:string;
+    let tableName:string;
   
+    // determine which table we are using
     switch (true) {
-      case (parentType=='stage' && childType=='phase'): table = 'sp'; break;
-      case (parentType=='phase' && childType=='round'): table = 'pr'; break;
-      case (parentType=='round' && childType=='turn'): table = 'rt'; break;
-      case (parentType=='turn' && childType=='step'): table = 'ts'; break;
+      case (parentType=='stage' && childType=='phase'): tableName = 'sp'; break;
+      case (parentType=='phase' && childType=='round'): tableName = 'pr'; break;
+      case (parentType=='round' && childType=='turn'): tableName = 'rt'; break;
+      case (parentType=='turn' && childType=='step'): tableName = 'ts'; break;
       default:
         return reject(`Can't link these two flow parts`);
     }
 
     // get copies of the current link parents and children
-    let linkTable = JSON.parse(JSON.stringify(stateOf.link[table].table));
-    let linkParents = JSON.parse(JSON.stringify(stateOf.link[table].parents));
-    let linkChildren = JSON.parse(JSON.stringify(stateOf.link[table].children));
+    let linkTable = JSON.parse(JSON.stringify(stateOf.link[tableName].table));
+    let linkParents = JSON.parse(JSON.stringify(stateOf.link[tableName].parents));
+    let linkChildren = JSON.parse(JSON.stringify(stateOf.link[tableName].children));
   
     // find where the parent and children live on those lists
     let parentRow = linkParents.indexOf(parent.value);
@@ -111,15 +112,64 @@ export const addLink2 = (stateOf:any, parent: Item, child: Item) => {
     // set the new link to true
     linkTable[parentRow][childCol] = true;
       
-    console.log(`LINK TYPE: ${parentType}x${childType}`);
+    console.log(`LINK TYPE: ${parentType} x ${childType}`);
     console.log('PARENTS: ',linkParents);
     console.log('CHILDREN: ',linkChildren);
     console.log('LINKTABLE: ',linkTable);
 
     // save the updated link data
-    stateOf.link[table].setTable(linkTable);
-    stateOf.link[table].setParents(linkParents);
-    stateOf.link[table].setChildren(linkChildren);
+    stateOf.link[tableName].setTable(linkTable);
+    stateOf.link[tableName].setParents(linkParents);
+    stateOf.link[tableName].setChildren(linkChildren);
+    return resolve();
+  });
+};
+
+
+// removes a link between flowTypes, possibly removing entire rows / cols
+export const unLink2 = (stateOf: any, parent: Item, child: Item) => {
+  return new Promise<void>((resolve,reject)=>{
+
+    let parentType = parent==null ? null : findFlowTypeById(stateOf,parent);
+    let childType = child==null ? null : findFlowTypeById(stateOf,child);
+
+    if (parentType!=null && parentType=='') return reject('Parent Not Found');
+    if (childType!=null && childType=='') return reject('Child Not Found');
+    let tableName:string;
+
+    // determine which table we are using
+    switch (true) {
+      case (parentType=='stage' && childType=='phase'): tableName = 'sp'; break;
+      case (parentType=='stage' && childType==null): tableName = 'sp'; break;
+      case (parentType==null && childType=='phase'): tableName = 'sp'; break;
+
+      case (parentType=='phase' && childType=='round'): tableName = 'pr'; break;
+      case (parentType=='phase' && childType==null): tableName = 'pr'; break;
+      case (parentType==null && childType=='round'): tableName = 'pr'; break;
+
+      case (parentType=='round' && childType=='turn'): tableName = 'rt'; break;
+      case (parentType=='round' && childType==null): tableName = 'rt'; break;
+      case (parentType==null && childType=='turn'): tableName = 'rt'; break;
+
+      case (parentType=='turn' && childType=='step'): tableName = 'ts'; break;
+      case (parentType=='turn' && childType==null): tableName = 'ts'; break;
+      case (parentType==null && childType=='step'): tableName = 'ts'; break;
+
+      default:
+        return reject(`Can't unlink these two flow parts`);
+    }
+
+    // get copies of the current link parents and children
+    let linkTable = JSON.parse(JSON.stringify(stateOf.link[tableName].table));
+    let linkParents = JSON.parse(JSON.stringify(stateOf.link[tableName].parents));
+    let linkChildren = JSON.parse(JSON.stringify(stateOf.link[tableName].children));
+
+    // find where the parent and children live on those lists
+    let parentRow = linkParents.indexOf(parent.value);
+    let childCol = linkChildren.indexOf(child.value);
+
+    console.log(`parent row: ${parentRow}, child column: ${childCol}`);
+
     return resolve();
   });
 };
@@ -179,7 +229,7 @@ export const unLink = (stateOf: any, parentId: string, childId: string) => {
   stateOf.setLinkChildren(linkChildren);
 };
 
-
+/*
 // retrieves the name of a flow part using the flow part type and id number 
 export const getNameById = (stateOf:any, flowPart: string, value: string) => {
   if (FLOW_PARTS.indexOf(flowPart)>-1) {
@@ -188,7 +238,7 @@ export const getNameById = (stateOf:any, flowPart: string, value: string) => {
       },null);
   } else return '';
 };
-
+*/
 
 // returns the children of any flow Part
 export const findChildren = (stateOf:any, identity: Item) => {
@@ -395,7 +445,10 @@ export const quickStart = (stateOf:any) => {
   stateOf.setSteps([newStep]);
 
   stateOf.addLink(newStage.identity.value,newPhase.identity.value);
-  //stateOf.addLink(newPhase.identity.value,newRound.identity.value);
+  stateOf.addLink2(newStage.identity,newPhase.identity);
+  stateOf.addLink2(newPhase.identity,newRound.identity);
+  stateOf.addLink2(newRound.identity,newTurn.identity);
+  stateOf.addLink2(newTurn.identity,newStep.identity);
 };
 
 // clear removes all the details from a single flowPart except the id

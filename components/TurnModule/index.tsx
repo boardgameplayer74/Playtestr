@@ -71,7 +71,7 @@ import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 // this returns the action module state so we can get a list of actions
 import { ActionModuleParams, ActionModuleState } from '../ActionModule';
 
-import { model, addLink, addLink2, unLink, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, getNameById, clear, clearAll, quickStart } from './functions';
+import { model, addLink, addLink2, unLink, unLink2, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, /*getNameById,*/ clear, clearAll, quickStart } from './functions';
 
 // this interface holds the list of acceptable options for flowPart
 export interface FlowPartOptions {
@@ -161,6 +161,7 @@ export interface TurnModuleParams {
   addLink: Function;
   addLink2: Function;
   unLink: Function;
+  unLink2: Function;
   findChildren: Function;
   findParents: Function;
   addPart: Function;
@@ -168,7 +169,7 @@ export interface TurnModuleParams {
   moveUp: Function;
   moveDown: Function;
   changer: Function;
-  getNameById: Function;
+  //getNameById: Function;
   initialize: Function;
   quickStart: Function;
   clear: Function;
@@ -261,8 +262,9 @@ export function TurnModuleState(){
     addLink: (parentId: string, childId: string) => addLink(stateOf,parentId,childId),
     addLink2: (parent: Item, child:Item) => addLink2(stateOf,parent,child),
     unLink: (parentId: string, childId: string) => unLink(stateOf,parentId,childId), 
+    unLink2: (parent: Item, child: Item) => unLink2(stateOf,parent,child),
 
-    // returns the IDs of familial links
+    // returns the identities of familial links
     findChildren: (identity: Item) => findChildren(stateOf,identity),
     findParents: (identity: Item) => findParents(stateOf,identity),
 
@@ -276,7 +278,7 @@ export function TurnModuleState(){
     changer: (flowPart: string, row: number, obj: object) => changer(stateOf,flowPart,row,obj),
     
     // retrieves the current name of a flow part using the flow part type and id number 
-    getNameById: ( flowPart: string, id: string) => getNameById(stateOf,flowPart,id),
+    //getNameById: ( flowPart: string, id: string) => getNameById(stateOf,flowPart,id),
 
     // initialize creates a flow part in each bucket using the add function
     initialize: () => {

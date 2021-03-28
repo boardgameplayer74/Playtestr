@@ -8,7 +8,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import css from './turn.module.css';
 
 // this returns the rule module state so we can get a list of rules
-import { RuleModuleParams, RuleModuleState } from '../RuleModule';
+//import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 
 /**
  * Stages are the largest structure in game flow, and are responsible for 
@@ -33,22 +33,14 @@ interface Item {
 }
 
 export interface Stage {
-  //id: string;                     // unique identifier for the stage, generated
-  //name: string;                   // human friendly name for the stage
   identity: Item;                 // identifies this stage uniquely
   description: string;            // free test to describe the stage purpose
-  //phases: Array<string>;          // list of phases in the stage
-  //phaseCycles: Array<PhaseCycle>; // list of phase cycles in the stage
   rules: Array<Item>;             // list of rules used in this stage (?)
 }
 
 export const NEW_STAGE = {
-  //id: '',
-  //name: '',
   identity: null,
   description: '',
-  //phases: [],
-  //phaseCycles: [],
   rules: [],
 };
 

@@ -23,25 +23,15 @@ interface Item {
 }
 
 export interface Phase {
-  //id: string;             // unique identifer for the phase, generated
-  //name: string;           // human friendly name for the phase
   identity: Item;         //  uniquely identifies this phase
   description: string;    // free test to describe the phase purpose
-  //stages: Array<string>;  // list of stages this phase can be found in
   actions: Array<Item>; // list of actions available in the phase
-  //rounds: ArrayItem;            // holds the chosen round type
-  //turn: Item;             // holds the chosen turn type
 }
 
 export const NEW_PHASE = {
-  //id: '',
-  //name: '',
   identity: null,
   description: '',
-  //stages: [],
   actions: [],
-  //round: null,
-  //turn: null,
 };
  
 export function drawPhase(

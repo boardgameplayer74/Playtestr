@@ -36,8 +36,6 @@ interface Item {
 }
 
 export interface Round {
-  //id: string;                 // unique identifer for round, generated
-  //name: string;               // human friendly name for the round
   identity: Item;             // uniquely identifies this round
   description: string;        // free test to describe the round purpose
   type: string;               // one of a pre-defined list of Round types
@@ -45,13 +43,10 @@ export interface Round {
   interrupts: Array<string>;  // list of actions allowed to interrupt a turn
   reactionFreeText: string;
   reactions: Array<string>;   // list of actions allowed to react to a turn
-  //turn: Item;                 // holds the chosen turn type
   options: Array<RoundOption>; // list of options used with this round
 }
 
 export const NEW_ROUND = {
-  //id: '',
-  //name: '',
   identity: null,
   description: '',
   type: '',
@@ -59,7 +54,6 @@ export const NEW_ROUND = {
   interrupts: [],
   reactionFreeText: '',
   reactions: [],
-  //turn: null,
   options: [],
 };
 
