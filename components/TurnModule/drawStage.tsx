@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams, FlowPartOptions } from './index';
+import { TurnModuleParams, FlowPartOptions, Item } from './index';
 import { phraseFormatter } from '../common/naming';
 import Select from 'react-select';
 import { familySelector } from './selectors';
@@ -18,30 +18,20 @@ import css from './turn.module.css';
  * stages. However, games can have any positive number of stages.
  */
 
-/**
- * a phase cycle describes how which phases repeat within a stage and what 
- * triggers the game to move on from that cycle
- */
-interface PhaseCycle {
-  phases: Array<string>;  // an array of phase names that repeat in sequence
-  trigger: Array<string>; // an array of trigger events that will end the cycle
-}
-
-interface Item {
-  value: string;
-  label: string;
-}
-
 export interface Stage {
-  identity: Item;                 // identifies this stage uniquely
-  description: string;            // free test to describe the stage purpose
-  rules: Array<Item>;             // list of rules used in this stage (?)
+  flowType: string;
+  identity: Item;           // identifies this stage uniquely
+  description: string;      // free test to describe the stage purpose
+  rules: Array<Item>;       // list of rules used in this stage (?)
+  children: Array<string>;  // a list of the phase IDs this tage is linked to
 }
 
 export const NEW_STAGE = {
+  flowType: 'stage',
   identity: null,
   description: '',
   rules: [],
+  children: [],
 };
 
 export function drawStage(

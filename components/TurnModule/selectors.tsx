@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 //import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
 import Select, { components } from 'react-select';
@@ -37,9 +37,9 @@ const SortableSelect = SortableContainer(Select);
 
 export function familySelector(
   stateOf: TurnModuleParams,
-  self: any,
-  type: string,
-  flowPart: string
+  flowPart: any,
+  relationship: string,
+  flowType: string
 ){
 
   // hook for setting the selected state
@@ -82,53 +82,46 @@ export function familySelector(
     }
   };
 
-  if (type=='parent') {
+  if (relationship=='parent') {
     return (
       <Select 
         className={css.selector}
         styles={customStyles}
         isMulti
-        value={(()=>stateOf.findParents(self.identity))()}
-        options={stateOf[`${flowPart}s`].map((thing:any)=>thing.identity)}
-        onChange={(selections,type) => {
-          if (type.action=='select-option') {
-            stateOf.addLink(type.option.value,self.identity.value);
-            stateOf.addLink2(type.option,self.identity);
-          } else if (type.action=='remove-value') {
-            stateOf.unLink(type.removedValue.value,self.identity.value);
-            stateOf.unLink2(type.removedValue,self.identity);
-          } else if (type.action=='clear') {
-            stateOf.unLink(null,self.identity.value);
-            stateOf.unLink2(null,self.identity);
+        value={(()=>stateOf.findParents(flowPart.identity))()}
+        options={stateOf[`${flowType}s`].map((thing:any)=>thing.identity)}
+        onChange={(selections,actionType) => {
+          if (actionType.action=='select-option') {
+            stateOf.addLink(actionType.option,flowPart.identity);
+          } else if (actionType.action=='remove-value') {
+            stateOf.unLink(actionType.removedValue,flowPart.identity);
+          } else if (actionType.action=='clear') {
+            stateOf.unLink(null,flowPart.identity);
           }
         }}
       />
     );
   }
-  if (type=='child') {
+  if (relationship=='child') {
     return (
       <Select 
         className={css.selector}
         styles={customStyles}
         isMulti
         /*onSortEnd={onSortEnd}*/
-        options={stateOf[`${flowPart}s`].map((thing:any)=>thing.identity)}
+        options={stateOf[`${flowType}s`].map((thing:any)=>thing.identity)}
         value={(()=>{
-          let selected = stateOf.findChildren(self.identity);
+          let selected = stateOf.findChildren(flowPart.identity);
           //console.log('selected: ',selected);
           return selected;
         })()}
-        onChange={(selections,type) => {
-          if (type.action=='select-option') {
-            console.log('selected: ',type.option);
-            stateOf.addLink(self.identity.value,type.option.value);
-            stateOf.addLink2(self.identity,type.option);
-          } else if (type.action=='remove-value') {
-            stateOf.unLink(self.identity.value,type.removedValue.value);
-            stateOf.unLink2(self.identity,type.removedValue);
-          } else if (type.action=='clear') {
-            stateOf.unLink(self.identity.value,null);
-            stateOf.unLink2(self.identity,null);
+        onChange={(selections,actionType) => {
+          if (actionType.action=='select-option') {
+            stateOf.addLink(flowPart.identity,actionType.option);
+          } else if (actionType.action=='remove-value') {
+            stateOf.unLink(flowPart.identity,actionType.removedValue);
+          } else if (actionType.action=='clear') {
+            stateOf.unLink(flowPart.identity,null);
           }
         }}
         /*components={{

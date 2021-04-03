@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 //import { v4 as uuidv4 } from 'uuid';
 import Draggable from 'react-draggable';
 //import { capitalizeFirstLetter } from '../common/naming';
@@ -71,16 +71,17 @@ import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 // this returns the action module state so we can get a list of actions
 import { ActionModuleParams, ActionModuleState } from '../ActionModule';
 
-import { model, addLink, addLink2, unLink, unLink2, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, /*getNameById,*/ clear, clearAll, quickStart } from './functions';
+import { model, addLink, unLink, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, clear, clearAll, quickStart } from './functions';
 
 // this interface holds the list of acceptable options for flowPart
 export interface FlowPartOptions {
   testing?: boolean;
 }
 
-interface Item {
+export interface Item {
   label: string;
   value: string;
+  flowType: string;
 }
 
 /**
@@ -100,52 +101,6 @@ export interface TurnModuleParams {
   steps: Array<Step>;   // list of Steps used in the game
   setSteps: Function;   // function to change the saved steps
 
-  linkTable: Array<Array<boolean>>; // holds links between components
-  setLinkTable: Function;           // function to change the table
-  linkParents: Array<string>;
-  setLinkParents: Function;
-  linkChildren: Array<string>;
-  setLinkChildren: Function;
-
-  /**
-   * the link table allows us to dynamically keep track of which components are
-   * connected together
-   */
-  link: {
-    sp: { 
-      table: Array<Array<boolean>>;
-      setTable: Function;
-      parents: Array<string>;
-      setParents: Function;
-      children: Array<string>;
-      setChildren: Function;
-    };
-    pr: { 
-      table: Array<Array<boolean>>;
-      setTable: Function;
-      parents: Array<string>;
-      setParents: Function;
-      children: Array<string>;
-      setChildren: Function;
-    };
-    rt: { 
-      table: Array<Array<boolean>>;
-      setTable: Function;
-      parents: Array<string>;
-      setParents: Function;
-      children: Array<string>;
-      setChildren: Function;
-    };
-    ts: { 
-      table: Array<Array<boolean>>;
-      setTable: Function;
-      parents: Array<string>;
-      setParents: Function;
-      children: Array<string>;
-      setChildren: Function;
-    };
-  }
-
   initialized: boolean;
   setInitialized: Function;
 
@@ -159,9 +114,7 @@ export interface TurnModuleParams {
   // functions!
   model: Function;
   addLink: Function;
-  addLink2: Function;
   unLink: Function;
-  unLink2: Function;
   findChildren: Function;
   findParents: Function;
   addPart: Function;
@@ -169,7 +122,6 @@ export interface TurnModuleParams {
   moveUp: Function;
   moveDown: Function;
   changer: Function;
-  //getNameById: Function;
   initialize: Function;
   quickStart: Function;
   clear: Function;
@@ -188,25 +140,6 @@ export function TurnModuleState(){
   const [turns,setTurns] = useState([]);
   const [steps,setSteps] = useState([]);
 
-  // hook functions for the link table
-  const [linkTable,setLinkTable] = useState([]);
-  const [linkParents, setLinkParents] = useState([]);
-  const [linkChildren, setLinkChildren] = useState([]);
-
-  // hook functions for the new link table
-  const [sp,setSP] = useState([]);
-  const [pr,setPR] = useState([]);
-  const [rt,setRT] = useState([]);
-  const [ts,setTS] = useState([]);
-  const [spParents,setSPParents] = useState([]);
-  const [spChildren,setSPChildren] = useState([]);
-  const [prParents,setPRParents] = useState([]);
-  const [prChildren,setPRChildren] = useState([]);
-  const [rtParents,setRTParents] = useState([]);
-  const [rtChildren,setRTChildren] = useState([]);
-  const [tsParents,setSParents] = useState([]);
-  const [tsChildren, setTSChildren] = useState([]);
-
   // various state flags
   const [initialized, setInitialized] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -219,33 +152,6 @@ export function TurnModuleState(){
     turns, setTurns,
     steps, setSteps,
     
-    linkTable, setLinkTable,
-    linkParents, setLinkParents,
-    linkChildren, setLinkChildren,
-
-    link: {
-      sp: { 
-        table:sp, setTable:setSP ,
-        parents:spParents, setParents:setSPParents,
-        children:spChildren, setChildren:setSPChildren,
-      },
-      pr: { 
-        table:pr, setTable:setPR, 
-        parents:prParents, setParents:setPRParents,
-        children:prChildren, setChildren:setPRChildren,
-      },
-      rt: { 
-        table:rt, setTable:setRT, 
-        parents:rtParents, setParents:setRTParents,
-        children:rtChildren, setChildren:setRTChildren,
-      },
-      ts: { 
-        table:ts, setTable:setTS,
-        parents:tsParents, setParents:setSParents,
-        children:tsChildren, setChildren:setTSChildren,
-      },
-    },
-
     initialized,
     setInitialized,
 
@@ -259,10 +165,8 @@ export function TurnModuleState(){
     model: () => model(stateOf),
 
     // creates or destroys familial links between flowParts
-    addLink: (parentId: string, childId: string) => addLink(stateOf,parentId,childId),
-    addLink2: (parent: Item, child:Item) => addLink2(stateOf,parent,child),
-    unLink: (parentId: string, childId: string) => unLink(stateOf,parentId,childId), 
-    unLink2: (parent: Item, child: Item) => unLink2(stateOf,parent,child),
+    addLink: (parent: Item, child:Item) => addLink(stateOf,parent,child),
+    unLink: (parent: Item, child: Item) => unLink(stateOf,parent,child),
 
     // returns the identities of familial links
     findChildren: (identity: Item) => findChildren(stateOf,identity),
@@ -277,9 +181,6 @@ export function TurnModuleState(){
     // allows us to change individual key-value pairs of a flowPart
     changer: (flowPart: string, row: number, obj: object) => changer(stateOf,flowPart,row,obj),
     
-    // retrieves the current name of a flow part using the flow part type and id number 
-    //getNameById: ( flowPart: string, id: string) => getNameById(stateOf,flowPart,id),
-
     // initialize creates a flow part in each bucket using the add function
     initialize: () => {
       if (stateOf.initialized==false) {
@@ -298,7 +199,17 @@ export function TurnModuleState(){
     // removes details from one or more flow parts
     clear: (flowPart: string) => clear(stateOf,flowPart),
     clearAll: () => clearAll(stateOf),
+
+    useThisEffect: (func:Function,dep=[]) => foo(func,dep)
   };
+
+  function foo(func:any,dep:Array<any>){
+    useEffect(func,dep);
+  };
+
+  useEffect(()=>{
+    console.log('NEW STATE: ',stateOf.model());
+  },[stateOf]);
   
   // send that state object back
   return stateOf;

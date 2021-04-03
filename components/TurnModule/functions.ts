@@ -1,4 +1,4 @@
-import { FLOW_PARTS } from './index';
+import { FLOW_PARTS, Item } from './index';
 import { NEW_STEP } from './drawStep';
 import { NEW_TURN } from './drawTurn';
 import { NEW_ROUND } from './drawRound';
@@ -6,11 +6,6 @@ import { NEW_PHASE } from './drawPhase';
 import { NEW_STAGE } from './drawStage';
 import { v4 as uuidv4 } from 'uuid';
 import { capitalizeFirstLetter } from '../common/naming';
-
-interface Item {
-  label: string;
-  value: string;
-}
 
 export const model = (stateOf:any) => {
   return {
@@ -22,437 +17,300 @@ export const model = (stateOf:any) => {
   };
 };
 
-// creates a link between flowTypes, designating one as the parent and the other as the child
-export const addLink = (stateOf:any, parentId: string, childId: string) => {
-  let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
-  let linkParents = stateOf.linkParents.slice();
-  let linkChildren = stateOf.linkChildren.slice();
-  let parentRow = linkParents.indexOf(parentId);
-  let childCol = linkChildren.indexOf(childId);
 
-  // if the parent row doesn't exist on table, add it
-  if (parentRow==-1){
-    parentRow = linkParents.length;
-    linkParents[parentRow] = parentId;
-    linkTable[parentRow] = Array(linkChildren.length).fill(false);
+// this returns the index position of a flow part
+const findIndexByIdentity = (stateOf: any, identity: Item) => {
+  return stateOf[`${identity.flowType}s`].reduce((acc:number,curr:any,index:number) =>
+    (curr.identity.value===identity.value) ? index : acc
+  ,-1);
+};
+
+
+// adds links between flow components
+export const addLink = (stateOf:any, parent:Item, child:Item) => {
+  // let's first find the index positions of the parent and child
+  const pIndex = findIndexByIdentity(stateOf,parent);
+  const cIndex = findIndexByIdentity(stateOf,child);
+
+  if (pIndex==-1) throw new Error(`parent not found!`);
+  if (cIndex==-1) throw new Error(`child not found!`);
+
+  // and verify that these are allowed to be linked
+  let parentPool:any, childPool:any;
+  let pos:number;
+  switch(true){
+    case (parent.flowType==='stage' && child.flowType==='phase'):
+    case (parent.flowType==='phase' && child.flowType==='round'):
+    case (parent.flowType==='round' && child.flowType==='turn'):
+    case (parent.flowType==='turn' && child.flowType==='step'):
+      parentPool = JSON.parse(JSON.stringify(stateOf[`${parent.flowType}s`]));
+      childPool = JSON.parse(JSON.stringify(stateOf[`${child.flowType}s`]));
+
+      // add the child's ID value to the parent's child list
+      pos = parentPool[pIndex].children.indexOf(child.value);
+      if (pos==-1) {
+        parentPool[pIndex].children.push(child.value);
+        stateOf[`set${capitalizeFirstLetter(parent.flowType)}s`](parentPool);
+      }
+
+      // add the parent's ID value to the child's parent list
+      pos = childPool[cIndex].parents.indexOf(parent.value);
+      if (pos==-1) {
+        childPool[cIndex].parents.push(parent.value);
+        stateOf[`set${capitalizeFirstLetter(child.flowType)}s`](childPool);
+      }
+
+      break;
+    default: throw new Error('Cannot link these flow parts');
   }
-
-  // if the child column doesn't exist on table, add it
-  if (childCol==-1){
-    childCol = linkChildren.length;
-    linkChildren[childCol] = childId;
-    for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = false;
-  }
-
-  linkTable[parentRow][childCol] = true;
-
-  //console.log('PARENTS: ',linkParents);
-  //console.log('CHILDREN: ',linkChildren);
-  //console.log('LINKTABLE: ',linkTable);
-
-  // save the updated link data
-  stateOf.setLinkTable(linkTable);
-  stateOf.setLinkParents(linkParents);
-  stateOf.setLinkChildren(linkChildren);
-};
-
-// this helper function returns the flow type of an identity
-const findFlowTypeById = (stateOf: any, identity: Item) => {
-  let flowType = FLOW_PARTS.reduce((result,flowType) => {
-    let isFlowPart = stateOf[`${flowType}s`].reduce((isPart,flowPart) =>
-      (flowPart.identity.value==identity.value) ? true : isPart,false);
-    return (isFlowPart==true) ? flowType : result;
-  },'');
-  return flowType;
-};
-
-// creates a link between flowTypes, designating one as the parent and the other as the child
-export const addLink2 = (stateOf:any, parent: Item, child: Item) => {
-  return new Promise<void>((resolve,reject)=>{
-
-    let parentType = findFlowTypeById(stateOf,parent);
-    if (parentType=='') return reject('Parent Not Found');
-    let childType = findFlowTypeById(stateOf,child);
-    if (childType=='') return reject('Child Not Found');
-    let tableName:string;
-  
-    // determine which table we are using
-    switch (true) {
-      case (parentType=='stage' && childType=='phase'): tableName = 'sp'; break;
-      case (parentType=='phase' && childType=='round'): tableName = 'pr'; break;
-      case (parentType=='round' && childType=='turn'): tableName = 'rt'; break;
-      case (parentType=='turn' && childType=='step'): tableName = 'ts'; break;
-      default:
-        return reject(`Can't link these two flow parts`);
-    }
-
-    // get copies of the current link parents and children
-    let linkTable = JSON.parse(JSON.stringify(stateOf.link[tableName].table));
-    let linkParents = JSON.parse(JSON.stringify(stateOf.link[tableName].parents));
-    let linkChildren = JSON.parse(JSON.stringify(stateOf.link[tableName].children));
-  
-    // find where the parent and children live on those lists
-    let parentRow = linkParents.indexOf(parent.value);
-    let childCol = linkChildren.indexOf(child.value);
-
-    // if the parent row doesn't exist on table, add it with all false links
-    if (parentRow==-1){
-      parentRow = linkParents.length;
-      linkParents[parentRow] = parent.value;
-      linkTable[parentRow] = Array(linkChildren.length).fill(0);
-    }
-  
-    // if the child column doesn't exist on table, add it with all false links
-    if (childCol==-1){
-      childCol = linkChildren.length;
-      linkChildren[childCol] = child.value;
-      for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = 0;
-    }
-  
-    // set the new link to true
-    linkTable[parentRow][childCol] = 1;
-      
-    console.log(`LINK TYPE: ${parentType} x ${childType}`);
-    console.log('PARENTS: ',linkParents);
-    console.log('CHILDREN: ',linkChildren);
-    console.log('LINKTABLE: ',linkTable);
-
-    // save the updated link data
-    stateOf.link[tableName].setTable(linkTable);
-    stateOf.link[tableName].setParents(linkParents);
-    stateOf.link[tableName].setChildren(linkChildren);
-    return resolve();
-  });
 };
 
 
-// removes a link between flowTypes, possibly removing entire rows / cols
-export const unLink2 = (stateOf: any, parent: Item, child: Item) => {
-  return new Promise<void>((resolve,reject)=>{
+// removes links between flow components
+export const unLink = (stateOf:any, parent:Item, child:Item) => {
 
-    let parentType = parent==null ? null : findFlowTypeById(stateOf,parent);
-    let childType = child==null ? null : findFlowTypeById(stateOf,child);
+  if (parent!==null && child!==null) {
+    // let's first find the index positions of the parent and child
+    const pIndex = findIndexByIdentity(stateOf,parent);
+    const cIndex = findIndexByIdentity(stateOf,child);
+  
+    if (pIndex==-1) throw new Error(`parent not found!`);
+    if (cIndex==-1) throw new Error(`child not found!`);
+  
+    // get the parent and child pools
+    let parentPool = JSON.parse(JSON.stringify(stateOf[`${parent.flowType}s`]));
+    let childPool = JSON.parse(JSON.stringify(stateOf[`${child.flowType}s`]));
+  
+    // verify that these flow parts are currently linked
+    let childPos = parentPool[pIndex].children.indexOf(child.value);
+    let parentPos = childPool[cIndex].parents.indexOf(parent.value);
+  
+    if (childPos==-1) throw new Error(`parent doesn't have this child!`);
+    if (parentPos==-1) throw new Error(`child doesn't have this parent`);
 
-    if (parentType!=null && parentType=='') return reject('Parent Not Found');
-    if (childType!=null && childType=='') return reject('Child Not Found');
-    let tableName:string;
+    // remove the relationship
+    parentPool[pIndex].children.splice(childPos,1);
+    childPool[cIndex].parents.splice(parentPos,1);
 
-    // determine which table we are using
-    switch (true) {
-      case (parentType=='stage' && childType=='phase'): tableName = 'sp'; break;
-      case (parentType=='stage' && childType==null): tableName = 'sp'; break;
-      case (parentType==null && childType=='phase'): tableName = 'sp'; break;
+    // save the results
+    stateOf[`set${capitalizeFirstLetter(parent.flowType)}s`](parentPool);
+    stateOf[`set${capitalizeFirstLetter(child.flowType)}s`](childPool);
 
-      case (parentType=='phase' && childType=='round'): tableName = 'pr'; break;
-      case (parentType=='phase' && childType==null): tableName = 'pr'; break;
-      case (parentType==null && childType=='round'): tableName = 'pr'; break;
+  } else if (parent!==null) {// remove all children
 
-      case (parentType=='round' && childType=='turn'): tableName = 'rt'; break;
-      case (parentType=='round' && childType==null): tableName = 'rt'; break;
-      case (parentType==null && childType=='turn'): tableName = 'rt'; break;
+    // let's first find the index position of the parent
+    const pIndex = findIndexByIdentity(stateOf,parent);
+    if (pIndex==-1) throw new Error(`parent not found!`);
 
-      case (parentType=='turn' && childType=='step'): tableName = 'ts'; break;
-      case (parentType=='turn' && childType==null): tableName = 'ts'; break;
-      case (parentType==null && childType=='step'): tableName = 'ts'; break;
-
-      default:
-        return reject(`Can't unlink these two flow parts`);
+    // find the child typoe
+    let childType;
+    switch(parent.flowType){
+      case 'stage': childType='phase'; break;      
+      case 'phase': childType='round'; break;      
+      case 'round': childType='turn'; break;      
+      case 'turn': childType='step'; break;      
+      default: throw new Error(`${parent.flowType} has no children`);
     }
 
-    // get copies of the current link parents and children
-    let linkTable = JSON.parse(JSON.stringify(stateOf.link[tableName].table));
-    let linkParents = JSON.parse(JSON.stringify(stateOf.link[tableName].parents));
-    let linkChildren = JSON.parse(JSON.stringify(stateOf.link[tableName].children));
+    // get the list of parents and children in each pool
+    let parentPool = JSON.parse(JSON.stringify(stateOf[`${parent.flowType}s`]));
+    let childPool = JSON.parse(JSON.stringify(stateOf[`${childType}s`]));
+    
+    // verify that the parent has at least one child
+    if (parentPool[pIndex].children.length==0) throw new Error(`${parent.flowType} has no children`);
 
-    // find where the parent and children live on those lists
-    let parentRow = parent==null ? null : linkParents.indexOf(parent.value);
-    let childCol = child==null ? null : linkChildren.indexOf(child.value);
-
-    // Set the corresponding links to false
-    if (parentRow>-1 && childCol>-1) linkTable[parentRow][childCol] = 0;
-    else if (childCol==null) {
-      // remove all children of this row
-      for (let c=0;c<linkChildren.length;c++) linkTable[parentRow][c] = 0;
-    } else if (parentRow==null) {
-      // remove all parents of this column
-      for (let r=0;r<linkParents.length;r++) linkTable[r][childCol] = 0;
-    }
-
-    // trim rows where necessary
-    for (let r=linkParents.length-1;r>-1;r--) {
-      let empty=true;
-      for (let c=0;c<linkChildren.length;c++) {
-        if (linkTable[r][c]>0) empty=false;
-      }
-      if (empty) {
-        linkParents.splice(r,1);
-        linkTable.splice(r,1);
-      }
-    }
-
-    // trim columns where necessary
-    for (let c=linkChildren.length-1;c>-1;c--) {
-      let empty=true;
-      for (let r=0;r<linkParents.length;r++) {
-        if (linkTable[r][c]>0) empty=false;
-      }
-      if (empty) {
-        linkChildren.splice(c,1);
-        for (let r=0;r<linkParents.length;r++) {
-          linkTable[r].splice(c,1);
+    // loop through and remove this parent from all children
+    parentPool[pIndex].children.forEach((childValue:string)=>{
+      childPool.forEach((child:any,index:number)=>{
+        if (child.identity.value===childValue) {
+          let parentPos = childPool[index].parents.indexOf(parent.value);
+          if (parentPos===-1) throw new Error(`Child missing parent value`);
+          childPool[index].parents.splice(parentPos,1);
         }
-      }
-    }
-
-    console.log(`LINK TYPE: ${parentType} x ${childType}`);
-    console.log('PARENTS: ',linkParents);
-    console.log('CHILDREN: ',linkChildren);
-    console.log('LINKTABLE: ',linkTable);
-
-    // save the updated link data
-    stateOf.link[tableName].setTable(linkTable);
-    stateOf.link[tableName].setParents(linkParents);
-    stateOf.link[tableName].setChildren(linkChildren);
-    return resolve();
-  });
-};
-
-
-export const unLink = (stateOf: any, parentId: string, childId: string) => {
-  let linkTable = JSON.parse(JSON.stringify(stateOf.linkTable));
-  let linkParents = stateOf.linkParents.slice();
-  let linkChildren = stateOf.linkChildren.slice();
-  let parentRow = linkParents.indexOf(parentId);
-  let childCol = linkChildren.indexOf(childId);
-
-  // Set the corresponding links to false
-  if (parentRow>-1 && childCol>-1) {
-    linkTable[parentRow][childCol] = false;
-  } else if (parentRow>-1) {
-    // remove all children of this row
-    for (let c=0;c<linkChildren.length;c++) linkTable[parentRow][c]=false;
-  } else if (childCol>-1) {
-    // remove all parents of this column
-    for (let r=0;r<linkParents.length;r++) linkTable[r][childCol]=false;
-  }
-
-  // trim rows where necessary
-  for (let r=linkParents.length-1;r>-1;r--) {
-    let empty=true;
-    for (let c=0;c<linkChildren.length;c++) {
-      if (linkTable[r][c]==true) empty=false;
-    }
-    if (empty) {
-      linkParents.splice(r,1);
-      linkTable.splice(r,1);
-    }
-  }
-
-  // trim columns where necessary
-  for (let c=linkChildren.length-1;c>-1;c--) {
-    let empty=true;
-    for (let r=0;r<linkParents.length;r++) {
-      if (linkTable[r][c]==true) empty=false;
-    }
-    if (empty) {
-      linkChildren.splice(c,1);
-      for (let r=0;r<linkParents.length;r++) {
-        linkTable[r].splice(c,1);
-      }
-    }
-  }
-
-  //console.log('PARENTS: ',linkParents);
-  //console.log('CHILDREN: ',linkChildren);
-  //console.log('LINKTABLE: ',linkTable);
-
-  // save the updated link data
-  stateOf.setLinkTable(linkTable);
-  stateOf.setLinkParents(linkParents);
-  stateOf.setLinkChildren(linkChildren);
-};
-
-/*
-// retrieves the name of a flow part using the flow part type and id number 
-export const getNameById = (stateOf:any, flowPart: string, value: string) => {
-  if (FLOW_PARTS.indexOf(flowPart)>-1) {
-    return stateOf[`${flowPart}s`].reduce((acc:string,curr:any)=>{
-        return (curr.identity.value==value) ? curr.identity : acc;
-      },null);
-  } else return '';
-};
-*/
-
-// returns the children of any flow Part
-export const findChildren = (stateOf:any, identity: Item) => {
-  let children=[];
-
-  // finds the given identity in the parent list
-  let r = stateOf.linkParents.reduce((acc:number,curr:string,index:number)=>{
-    if (curr==identity.value) return index;
-    return acc;
-  },-1) as number;
-
-  // if this parent exists in the link table
-  if (r>-1) {
-    // search children list for members with links to this parent
-    stateOf.linkChildren.forEach((childId:string,c:number)=>{
-      if (stateOf.linkTable[r][c]==true) {
-        // if found, search through all flowParts for the child 
-        FLOW_PARTS.forEach((flowPart:string)=>{
-          let child = stateOf[`${flowPart}s`].reduce((acc:string,curr:any) =>
-            (curr.identity.value==childId) ? curr.identity : acc,null);
-          // if found, push the identity to the lst
-          if (child!=null) children.push(JSON.parse(JSON.stringify(child)));
-        });
-      }
+      });
     });
-  }
 
-  // return the list of children
-  return children;
+    // empty the parent's child list
+    parentPool[pIndex].children = [];
+
+    // save the results
+    stateOf[`set${capitalizeFirstLetter(parent.flowType)}s`](parentPool);
+    stateOf[`set${capitalizeFirstLetter(childType)}s`](childPool);
+
+  } else if (child!==null) {
+
+    // let's first find the index position of the child
+    const cIndex = findIndexByIdentity(stateOf,child);
+    if (cIndex==-1) throw new Error(`child not found!`);
+
+    // find the child typoe
+    let parentType;
+    switch(child.flowType){
+      case 'phase': parentType='stage'; break;      
+      case 'round': parentType='phase'; break;      
+      case 'turn': parentType='round'; break;      
+      case 'step': parentType='turn'; break;      
+      default: throw new Error(`${child.flowType} has no parents`);
+    }
+
+    // get the list of parents and children in each pool
+    let parentPool = JSON.parse(JSON.stringify(stateOf[`${parentType}s`]));
+    let childPool = JSON.parse(JSON.stringify(stateOf[`${child.flowType}s`]));
+    
+    // verify that the child has at least one parent
+    if (childPool[cIndex].parents.length==0) throw new Error(`${child.flowType} has no parents`);
+
+    // loop through and remove this parent from all children
+    childPool[cIndex].parents.forEach((parentValue:string)=>{
+      parentPool.forEach((parent:any,index:number)=>{
+        if (parent.identity.value===parentValue) {
+          let childPos = parentPool[index].children.indexOf(child.value);
+          if (childPos===-1) throw new Error(`Parent missing child value`);
+          parentPool[index].children.splice(childPos,1);
+        }
+      });
+    });
+
+    // empty the child's parent list
+    childPool[cIndex].parents = [];
+
+    // save the results
+    stateOf[`set${capitalizeFirstLetter(parentType)}s`](parentPool);
+    stateOf[`set${capitalizeFirstLetter(child.flowType)}s`](childPool);
+  } else throw new Error(`Can't unlink nothing`);
+  
 };
 
 
-// returns the parents of any flow part
+// removes all relationships from a flow part
+export const unLinkAll = (stateOf:any, identity:Item) => {
+  // remove all children
+  
+};
+
+
+// returns the full identity of the parents of any flow part
 export const findParents = (stateOf:any, identity: Item) => {
   let parents = [];
-  
-  // finds the given identity in the parent list
-  let c = stateOf.linkChildren.reduce((acc:number,curr:string,index:number)=>{
-    return (curr==identity.value) ? index : acc;
-  },-1) as number;
 
-  // if this child exists in the link table
-  if (c>-1) {
-    // search children list for members with links to this parent
-    stateOf.linkParents.forEach((parentId:string,r:number)=>{
-      if (stateOf.linkTable[r][c]==true) {
-        // if found, search through all flowParts for the child 
-        FLOW_PARTS.forEach((flowPart:string)=>{
-          let parent = stateOf[`${flowPart}s`].reduce((acc:string,curr:any) =>
-            (curr.identity.value==parentId) ? curr.identity : acc,null);
-          // if found, push the identity to the lst
-          if (parent!=null) parents.push(JSON.parse(JSON.stringify(parent)));
-        });
-      }
-    });
+  // find this flow part's index
+  let index = stateOf[`${identity.flowType}s`].reduce((acc,curr,index)=>
+    (curr.identity.value===identity.value) ? index : acc, -1);
+
+  // make sure we are working with a valid flow part
+  if (index==-1) throw new Error(`Flow part not found!`);
+
+  // determine the parent flowType:
+  let parentType;
+  switch(identity.flowType){
+    case 'phase': parentType='stage'; break;
+    case 'round': parentType='phase'; break;
+    case 'turn': parentType='round'; break;
+    case 'step': parentType='turn'; break;
+    default: throw new Error(`Cannot get parent for ${identity.flowType}`);
   }
-  
+
+  // loop through each of the flow parts listed parents
+  stateOf[`${identity.flowType}s`][index].parents.forEach((parent:string) => {
+    stateOf[`${parentType}s`].forEach((item:any) => {
+      if (item.identity.value===parent) parents.push(item.identity);
+    });
+  });
+
   return parents;
 };
 
 
-export const addPart = (stateOf:any, flowPart: string, row: number) => {
-  // TODO: add the new thing at a particular index location
-  return new Promise<void>((resolve,reject)=>{
-    if (FLOW_PARTS.indexOf(flowPart)>-1) {
+// returns the children of any flow Part
+export const findChildren = (stateOf:any, identity: Item) => {
+  let children = [];
+  
+  // find this flow part's index
+  let index = stateOf[`${identity.flowType}s`].reduce((acc,curr,index)=>
+    (curr.identity.value===identity.value) ? index : acc, -1);
 
-      // initial immutable TMI state copy
-      let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+  // make sure we are working with a valid flow part
+  if (index==-1) throw new Error(`Flow part not found!`);
 
-      // check for too many members
-      if (flowParts.length>9) return reject(`Can't have more than 10 ${flowPart}s`);
+  // determine the child flowType:
+  let childType;
+  switch(identity.flowType){
+    case 'stage': childType='phase'; break;
+    case 'phase': childType='round'; break;
+    case 'round': childType='turn'; break;
+    case 'turn': childType='step'; break;
+    default: throw new Error(`Cannot get child for ${identity.flowType}`);
+  }
 
-      // create a new flow part for the TMI
-      let thing = 
-        flowPart=='stage' ? JSON.parse(JSON.stringify(NEW_STAGE)) : 
-        flowPart=='phase' ? JSON.parse(JSON.stringify(NEW_PHASE)) : 
-        flowPart=='round' ? JSON.parse(JSON.stringify(NEW_ROUND)) :
-        flowPart=='turn' ? JSON.parse(JSON.stringify(NEW_TURN)) :
-        flowPart=='step' ? JSON.parse(JSON.stringify(NEW_STEP)) : {};
-      thing.identity = {label:'', value:uuidv4()};
-
-      // put the new flow part in the state copy
-      flowParts.splice(row+1,0,thing);
-
-      // replace the original TMI with the new version
-      stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-      // return true when the function operated correctly
-      return resolve();
-    }
-    return reject(`${flowPart} is not an approved flow mechanism`);
+  // loop through each of the flow parts listed childs
+  stateOf[`${identity.flowType}s`][index].children.forEach((child:string) => {
+    stateOf[`${childType}s`].forEach((item:any) => {
+      if (item.identity.value===child) children.push(item.identity);
+    });
   });
+
+  return children;
+};
+
+
+// adds a new flow part ot the turn module
+export const addPart = (stateOf:any, flowType: string, row: number) => {
+  if (FLOW_PARTS.indexOf(flowType)>-1) {
+    let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowType}s`]));
+    if (flowParts.length>9) throw new Error(`Can't have more than 10 ${flowType}s`);
+    let thing = 
+      flowType=='stage' ? JSON.parse(JSON.stringify(NEW_STAGE)) : 
+      flowType=='phase' ? JSON.parse(JSON.stringify(NEW_PHASE)) : 
+      flowType=='round' ? JSON.parse(JSON.stringify(NEW_ROUND)) :
+      flowType=='turn' ? JSON.parse(JSON.stringify(NEW_TURN)) :
+      flowType=='step' ? JSON.parse(JSON.stringify(NEW_STEP)) : {};
+    thing.identity = {label:'', value:uuidv4(), flowType};
+    flowParts.splice(row+1,0,thing);
+    stateOf[`set${capitalizeFirstLetter(flowType)}s`](flowParts);
+  }
+  else throw new Error(`${flowType} is not an approved flow mechanism`);
 };
 
 
 // allows the client to remove a flow member from the TMI state
-export const killPart = (stateOf:any, flowPart: string, row:number) => {
-  return new Promise<void>((resolve,reject)=>{
-    if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-      // initial immutable TMI state copy
-      let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-
-      // check for too many members
-      if (flowParts.length==1) return reject(`Can't have less than 1 ${flowPart}s`);
-
-      // remove the intended thing from the TNI
-      flowParts.splice(row,1);
-
-      // replace the original TMI with the new version
-      stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-      // return true when the function operated correctly
-      return resolve();
-    }
-    return reject(`${flowPart} is not an approved flow mechanism`);
-  });
+export const killPart = (stateOf:any, flowType: string, row:number) => {
+  if (FLOW_PARTS.indexOf(flowType)>-1) {
+    let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowType}s`]));
+    if (flowParts.length==1) throw new Error(`Can't have less than 1 ${flowType}s`);
+    let thing = JSON.parse(JSON.stringify(flowParts[row]));
+    flowParts.splice(row,1);
+    stateOf[`set${capitalizeFirstLetter(flowType)}s`](flowParts);
+  }
+  else throw new Error(`${flowType} is not an approved flow mechanism`);
 };
 
 // move this thing up in the list
 export const moveUp = (stateOf:any, flowPart: string, row:number) => {
-  return new Promise<void>((resolve,reject)=>{
-    if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-      // initial immutable TMI state copy
-      let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-
-      // move the thing up a row
-      flowParts.splice(row-1, 0, flowParts.splice(row, 1)[0]);
-
-      // replace the original TMI with the new version
-      stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-      // return true when the function operated correctly
-      return resolve();
-    }
-    return reject(`${flowPart} is not an approved flow mechanism`);
-  });
+  if (FLOW_PARTS.indexOf(flowPart)>-1) {
+    let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+    flowParts.splice(row-1, 0, flowParts.splice(row, 1)[0]);
+    stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
+  }
+  else throw new Error(`${flowPart} is not an approved flow mechanism`);
 };
 
 // move this thing down in the list
 export const moveDown = (stateOf:any, flowPart: string, row:number) => {
-  return new Promise<void>((resolve,reject)=>{
-    if (FLOW_PARTS.indexOf(flowPart)>-1) {
-
-      // initial immutable TMI state copy
-      let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-
-      // move the thing up a row
-      flowParts.splice(row+1, 0, flowParts.splice(row, 1)[0]);
-
-      // replace the original TMI with the new version
-      stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-
-      // return true when the function operated correctly
-      return resolve();
-    }
-    return reject(`${flowPart} is not an approved flow mechanism`);
-  });
+  if (FLOW_PARTS.indexOf(flowPart)>-1) {
+    let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+    flowParts.splice(row+1, 0, flowParts.splice(row, 1)[0]);
+    stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
+  }
+  else throw new Error(`${flowPart} is not an approved flow mechanism`);
 };
 
 export const changer = (stateOf:any, flowPart: string, row: number, obj: object) => {
-  return new Promise<void>((resolve,reject)=>{
-    if (FLOW_PARTS.indexOf(flowPart)>-1) {
-      let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
-      flowParts[row] = Object.assign(flowParts[row],obj);
-      stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
-      return resolve();
-    }
-    return reject (`${flowPart} is not an approved flow mechanism`);
-  });
+  if (FLOW_PARTS.indexOf(flowPart)>-1) {
+    let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+    flowParts[row] = Object.assign(flowParts[row],obj);
+    stateOf[`set${capitalizeFirstLetter(flowPart)}s`](flowParts);
+  }
+  else throw new Error(`${flowPart} is not an approved flow mechanism`);
 };
 
 // this resets all the flow parts and provides a simple game framework
@@ -464,73 +322,59 @@ export const quickStart = (stateOf:any) => {
   let newPhase = JSON.parse(JSON.stringify(stateOf.phases[0]));
   newPhase.identity.label = 'Phase01';
   newPhase.description = 'This game has only one phase';
-  //stateOf.addLink(newStage.identity.value,newPhase.identity.value);
+  newStage.children = [newPhase.identity.value];
+  newPhase.parents = [newStage.identity.value];
 
   let newRound = JSON.parse(JSON.stringify(stateOf.rounds[0]));
   newRound.identity.label = 'Round01';
   newRound.description = 'This game has only one kind of Round';
   newRound.type = 'fixed';
-  //stateOf.addLink(newPhase.identity.value,newRound.identity.value);
+  newPhase.children = [newRound.identity.value];
+  newRound.parents = [newPhase.identity.value];
 
   let newTurn = JSON.parse(JSON.stringify(stateOf.turns[0]));
   newTurn.identity.label = 'Turn01';
   newTurn.description = 'This game has only one type of turn';
-  //stateOf.addLink(newRound.identity.value,newTurn.identity.value);
+  newRound.children = [newTurn.identity.value];
+  newTurn.parents = [newRound.identity.value];
 
   let newStep = JSON.parse(JSON.stringify(stateOf.steps[0]));
   newStep.identity.label = 'Step01';
   newStep.description = `This game's turns have only one step`
+  newTurn.children = [newStep.identity.value];
+  newStep.parents = [newTurn.identity.value];
 
   stateOf.setStages([newStage]);
   stateOf.setPhases([newPhase]);
   stateOf.setRounds([newRound]);
   stateOf.setTurns([newTurn]);
   stateOf.setSteps([newStep]);
-
-  stateOf.addLink(newStage.identity.value,newPhase.identity.value);
-  stateOf.addLink2(newStage.identity,newPhase.identity);
-  stateOf.addLink2(newPhase.identity,newRound.identity);
-  stateOf.addLink2(newRound.identity,newTurn.identity);
-  stateOf.addLink2(newTurn.identity,newStep.identity);
 };
 
 // clear removes all the details from a single flowPart except the id
 export const clear = (stateOf:any, flowPart: string) => {
-  return new Promise<void>((resolve,reject)=>{
-    if (FLOW_PARTS.indexOf(flowPart)>-1) {
-      let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
+  if (FLOW_PARTS.indexOf(flowPart)>-1) {
+    let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
 
-      const newFlowParts = flowParts.map((thing:any) => {
-        let newThing:any;
-        switch(flowPart) {
-          case "stage":
-            newThing = JSON.parse(JSON.stringify(NEW_STAGE));
-            newThing.identity.value = thing.identity.value;
-            break;
-          case "phase":
-            newThing = JSON.parse(JSON.stringify(NEW_PHASE));
-            newThing.identity.value = thing.identity.value;
-            break;
-          case "round":
-            newThing = JSON.parse(JSON.stringify(NEW_ROUND));
-            newThing.identity.value = thing.identity.value;
-            break;
-          case "turn":
-            newThing = JSON.parse(JSON.stringify(NEW_TURN));
-            newThing.identity.value = thing.identity.value;
-            break;
-          case "step":
-            newThing = JSON.parse(JSON.stringify(NEW_STEP));
-            newThing.identity.value = thing.identity.value;
-            break;
-        }
-        return newThing;
-      });
-      stateOf[`set${capitalizeFirstLetter(flowPart)}s`](newFlowParts);
-      return resolve();
-    }
-    return reject(`${flowPart} is not an approved flow mechanism`);
-  });
+    const newFlowParts = flowParts.map((thing:any) => {
+      let newThing:any;
+      switch(flowPart) {
+        case "stage": newThing = JSON.parse(JSON.stringify(NEW_STAGE)); break;
+        case "phase": newThing = JSON.parse(JSON.stringify(NEW_PHASE)); break;
+        case "round": newThing = JSON.parse(JSON.stringify(NEW_ROUND)); break;
+        case "turn": newThing = JSON.parse(JSON.stringify(NEW_TURN)); break;
+        case "step": newThing = JSON.parse(JSON.stringify(NEW_STEP)); break;
+      }
+      newThing.identity = {
+        label:'', 
+        flowType:thing.identity.flowType, 
+        value:thing.identity.value
+      };
+      return newThing;
+    });
+    stateOf[`set${capitalizeFirstLetter(flowPart)}s`](newFlowParts);
+  }
+  else throw new Error(`${flowPart} is not an approved flow mechanism`);
 };
 
 // runs the clear function on every flowPart bucket

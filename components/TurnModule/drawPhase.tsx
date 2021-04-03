@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams, FlowPartOptions } from './index';
+import { TurnModuleParams, FlowPartOptions, Item } from './index';
 import { phraseFormatter } from '../common/naming';
 import Select from 'react-select';
 import { familySelector } from './selectors';
@@ -17,21 +17,22 @@ import css from './turn.module.css';
  * It's possible that phases get their actions from the embedded turns
  */
 
-interface Item {
-  label: string;
-  value: string;
-}
-
 export interface Phase {
-  identity: Item;         //  uniquely identifies this phase
-  description: string;    // free test to describe the phase purpose
-  actions: Array<Item>; // list of actions available in the phase
+  flowType: string;
+  identity: Item;           //  uniquely identifies this phase
+  description: string;      // free test to describe the phase purpose
+  actions: Array<Item>;     // list of actions available in the phase
+  parents: Array<string>;   // list of stage IDs this phase is linked to
+  children: Array<string>;  // list of round IDs this phase is linked to
 }
 
 export const NEW_PHASE = {
+  flowType: 'phase',
   identity: null,
   description: '',
   actions: [],
+  parents: [],
+  children: [],
 };
  
 export function drawPhase(

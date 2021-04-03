@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams, FlowPartOptions } from './index';
+import { TurnModuleParams, FlowPartOptions, Item } from './index';
 import { 
   camelToTitle, 
   phraseFormatter, 
@@ -30,23 +30,22 @@ interface RoundOption {
   value: string | boolean;  // a value that indicates which option was taken
 }
 
-interface Item {
-  label: string;
-  value: string;
-}
-
 export interface Round {
-  identity: Item;             // uniquely identifies this round
-  description: string;        // free test to describe the round purpose
-  type: string;               // one of a pre-defined list of Round types
+  flowType: string;
+  identity: Item;               // uniquely identifies this round
+  description: string;          // free test to describe the round purpose
+  type: string;                 // one of a pre-defined list of Round types
   interruptFreeText: string;
-  interrupts: Array<string>;  // list of actions allowed to interrupt a turn
+  interrupts: Array<string>;    // list of actions allowed to interrupt a turn
   reactionFreeText: string;
-  reactions: Array<string>;   // list of actions allowed to react to a turn
-  options: Array<RoundOption>; // list of options used with this round
+  reactions: Array<string>;     // list of actions allowed to react to a turn
+  options: Array<RoundOption>;  // list of options used with this round
+  parents: Array<string>;       // list of phase IDs this round is linked to
+  children: Array<string>;      // list if turn IDs this round is linked to
 }
 
 export const NEW_ROUND = {
+  flowType: 'round',
   identity: null,
   description: '',
   type: '',
@@ -55,6 +54,8 @@ export const NEW_ROUND = {
   reactionFreeText: '',
   reactions: [],
   options: [],
+  parents: [],
+  children: [],
 };
 
 /**

@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams, FlowPartOptions } from './index';
+import { TurnModuleParams, FlowPartOptions, Item } from './index';
 import { phraseFormatter } from '../common/naming';
 import { familySelector } from './selectors';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -25,11 +25,6 @@ interface TurnOption {
   value: string | boolean;  // a value that indicates which option was taken
 }
 
-interface Item {
-  label: string;
-  value: string;
-}
-
 /**
  * Turn are the time window during which a single agent performs one or more 
  * actions sequentially before another agent is allowed to act, though 
@@ -40,17 +35,23 @@ interface Item {
  * Turns are pre-defined structures that are selected by the designer 
  */
 export interface Turn {
+  flowType: string;
   identity: Item;             // uniquely identifies this Turn
   description: string;        // free test to describe the turn purpose
   type: string;               // one of a pre-defined list of Turn types
   options: Array<TurnOption>; // list of options used with this turn
+  parents: Array<string>;     // list of round IDs this turn is linked to
+  children: Array<string>;    // list of step IDs this turn is linked to
 }
 
 export const NEW_TURN = {
+  flowType: 'turn',
   identity: null,
   description: '',
   type: '',
   options: [],
+  parents: [],
+  children: [],
 };
 
 export function drawTurn(

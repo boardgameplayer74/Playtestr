@@ -1,6 +1,6 @@
 import React from 'react';
 import flowEditor from './flowEditor';
-import { TurnModuleParams, FlowPartOptions } from './index';
+import { TurnModuleParams, FlowPartOptions, Item } from './index';
 import { phraseFormatter, phraseListFormatter } from '../common/naming';
 //import Select from 'react-select';
 import { familySelector } from './selectors';
@@ -15,23 +15,22 @@ import css from './turn.module.css';
  * Some designers call steps "Sequential Phases" or sometimes even just phases.
  */
  
-interface Item {
-  label: string;
-  value: string;
-}
-
 export interface Step {
+  flowType: string;
   identity: Item;         // uniquely identifies this step
   description: string;    // free test to describe the stage purpose
   actionFreeText;         // free text of action names
   actions: Array<string>; // a list of Actions permitted during the step
+  parents: Array<string>; // list of turn IDs this step is linked to
 }
 
 export const NEW_STEP = {
+  flowType: 'step',
   identity: null,
   description: '',
   actionFreeText: '',
   actions: [],
+  parents: [],
 };
 
 
