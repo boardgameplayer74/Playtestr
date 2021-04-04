@@ -16,7 +16,6 @@ import css from './turn.module.css';
  */
  
 export interface Step {
-  flowType: string;
   identity: Item;         // uniquely identifies this step
   description: string;    // free test to describe the stage purpose
   actionFreeText;         // free text of action names
@@ -25,7 +24,6 @@ export interface Step {
 }
 
 export const NEW_STEP = {
-  flowType: 'step',
   identity: null,
   description: '',
   actionFreeText: '',

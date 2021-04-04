@@ -1,4 +1,4 @@
-import { FLOW_PARTS, Item } from './index';
+import { FLOW_PARTS, Item, TurnModuleParams } from './index';
 import { NEW_STEP } from './drawStep';
 import { NEW_TURN } from './drawTurn';
 import { NEW_ROUND } from './drawRound';
@@ -7,7 +7,9 @@ import { NEW_STAGE } from './drawStage';
 import { v4 as uuidv4 } from 'uuid';
 import { capitalizeFirstLetter } from '../common/naming';
 
-export const model = (stateOf:any) => {
+
+// returns the current data model structure, minus functions
+export const model = (stateOf:TurnModuleParams) => {
   return {
     stages: JSON.parse(JSON.stringify(stateOf.stages)),
     phases: JSON.parse(JSON.stringify(stateOf.phases)),
@@ -19,7 +21,7 @@ export const model = (stateOf:any) => {
 
 
 // this returns the index position of a flow part
-const findIndexByIdentity = (stateOf: any, identity: Item) => {
+const findIndexByIdentity = (stateOf:TurnModuleParams, identity:Item) => {
   return stateOf[`${identity.flowType}s`].reduce((acc:number,curr:any,index:number) =>
     (curr.identity.value===identity.value) ? index : acc
   ,-1);
@@ -27,7 +29,7 @@ const findIndexByIdentity = (stateOf: any, identity: Item) => {
 
 
 // adds links between flow components
-export const addLink = (stateOf:any, parent:Item, child:Item) => {
+export const addLink = (stateOf:TurnModuleParams, parent:Item, child:Item) => {
   // let's first find the index positions of the parent and child
   const pIndex = findIndexByIdentity(stateOf,parent);
   const cIndex = findIndexByIdentity(stateOf,child);
@@ -67,7 +69,7 @@ export const addLink = (stateOf:any, parent:Item, child:Item) => {
 
 
 // removes links between flow components
-export const unLink = (stateOf:any, parent:Item, child:Item) => {
+export const unLink = (stateOf:TurnModuleParams, parent:Item, child:Item) => {
 
   if (parent!==null && child!==null) {
     // let's first find the index positions of the parent and child
@@ -103,7 +105,7 @@ export const unLink = (stateOf:any, parent:Item, child:Item) => {
     if (pIndex==-1) throw new Error(`parent not found!`);
 
     // find the child typoe
-    let childType;
+    let childType:string;
     switch(parent.flowType){
       case 'stage': childType='phase'; break;      
       case 'phase': childType='round'; break;      
@@ -183,14 +185,40 @@ export const unLink = (stateOf:any, parent:Item, child:Item) => {
 
 
 // removes all relationships from a flow part
-export const unLinkAll = (stateOf:any, identity:Item) => {
-  // remove all children
+const unLinkAll = (stateOf:TurnModuleParams, flowType:string, row:number) => {
+  if (FLOW_PARTS.indexOf(flowType)>-1) {
+    let identity = JSON.parse(JSON.stringify(stateOf[`${flowType}s`][row].identity));
+
+    // remove all parents and children of this flow part
+    unLink(stateOf,identity,null);
+    unLink(stateOf,null,identity);
   
+    // specific flow parts may require other types of unlinking as well
+    switch(identity.flowType){
+      case 'stage':
+        // stages unlink rules
+        break;
+      case 'phase':
+        // phases unlink actions
+        break;
+      case 'round':
+        // rounds unlink interrupts and reactions
+        break;
+      case 'turn':
+        // ?
+        break;
+      case 'step':
+        // steps unlink actions
+        break;
+      default:
+    }
+  }
+  else throw new Error(`${flowType} is not an approved flow mechanism`);
 };
 
 
 // returns the full identity of the parents of any flow part
-export const findParents = (stateOf:any, identity: Item) => {
+export const findParents = (stateOf:TurnModuleParams, identity: Item) => {
   let parents = [];
 
   // find this flow part's index
@@ -222,7 +250,7 @@ export const findParents = (stateOf:any, identity: Item) => {
 
 
 // returns the children of any flow Part
-export const findChildren = (stateOf:any, identity: Item) => {
+export const findChildren = (stateOf:TurnModuleParams, identity: Item) => {
   let children = [];
   
   // find this flow part's index
@@ -253,8 +281,32 @@ export const findChildren = (stateOf:any, identity: Item) => {
 };
 
 
+// this reorders a parent's children
+export const reorderChildren = (
+  stateOf:TurnModuleParams, 
+  parent:Item, 
+  oldIndex:number, 
+  newIndex:number
+) => {
+  let parentPool = JSON.parse(JSON.stringify(stateOf[`${parent.flowType}s`]));
+  
+  let pIndex = parentPool.reduce((acc:number,curr:any,pos:number) => 
+    (curr.identity.value===parent.value) ? pos : acc
+  ,-1);
+
+  if (pIndex===-1) throw new Error(`Cannot find flow part`);
+
+  // move child to new location
+  let part = parentPool[pIndex].children.splice(oldIndex,1);
+  parentPool[pIndex].children.splice(newIndex,0,part[0]);
+
+  // save the result
+  stateOf[`set${capitalizeFirstLetter(parent.flowType)}s`](parentPool);
+};
+
+
 // adds a new flow part ot the turn module
-export const addPart = (stateOf:any, flowType: string, row: number) => {
+export const addPart = (stateOf:TurnModuleParams, flowType: string, row: number) => {
   if (FLOW_PARTS.indexOf(flowType)>-1) {
     let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowType}s`]));
     if (flowParts.length>9) throw new Error(`Can't have more than 10 ${flowType}s`);
@@ -273,8 +325,9 @@ export const addPart = (stateOf:any, flowType: string, row: number) => {
 
 
 // allows the client to remove a flow member from the TMI state
-export const killPart = (stateOf:any, flowType: string, row:number) => {
+export const killPart = (stateOf:TurnModuleParams, flowType: string, row:number) => {
   if (FLOW_PARTS.indexOf(flowType)>-1) {
+    unLinkAll(stateOf,flowType,row);
     let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowType}s`]));
     if (flowParts.length==1) throw new Error(`Can't have less than 1 ${flowType}s`);
     let thing = JSON.parse(JSON.stringify(flowParts[row]));
@@ -285,7 +338,7 @@ export const killPart = (stateOf:any, flowType: string, row:number) => {
 };
 
 // move this thing up in the list
-export const moveUp = (stateOf:any, flowPart: string, row:number) => {
+export const moveUp = (stateOf:TurnModuleParams, flowPart: string, row:number) => {
   if (FLOW_PARTS.indexOf(flowPart)>-1) {
     let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
     flowParts.splice(row-1, 0, flowParts.splice(row, 1)[0]);
@@ -295,7 +348,7 @@ export const moveUp = (stateOf:any, flowPart: string, row:number) => {
 };
 
 // move this thing down in the list
-export const moveDown = (stateOf:any, flowPart: string, row:number) => {
+export const moveDown = (stateOf:TurnModuleParams, flowPart: string, row:number) => {
   if (FLOW_PARTS.indexOf(flowPart)>-1) {
     let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
     flowParts.splice(row+1, 0, flowParts.splice(row, 1)[0]);
@@ -304,7 +357,7 @@ export const moveDown = (stateOf:any, flowPart: string, row:number) => {
   else throw new Error(`${flowPart} is not an approved flow mechanism`);
 };
 
-export const changer = (stateOf:any, flowPart: string, row: number, obj: object) => {
+export const changer = (stateOf:TurnModuleParams, flowPart: string, row: number, obj: object) => {
   if (FLOW_PARTS.indexOf(flowPart)>-1) {
     let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
     flowParts[row] = Object.assign(flowParts[row],obj);
@@ -314,7 +367,7 @@ export const changer = (stateOf:any, flowPart: string, row: number, obj: object)
 };
 
 // this resets all the flow parts and provides a simple game framework
-export const quickStart = (stateOf:any) => {
+export const quickStart = (stateOf:TurnModuleParams) => {
   let newStage = JSON.parse(JSON.stringify(stateOf.stages[0]));
   newStage.identity.label = 'Stage01';
   newStage.description = 'This game has only one stage';
@@ -352,7 +405,7 @@ export const quickStart = (stateOf:any) => {
 };
 
 // clear removes all the details from a single flowPart except the id
-export const clear = (stateOf:any, flowPart: string) => {
+export const clear = (stateOf:TurnModuleParams, flowPart: string) => {
   if (FLOW_PARTS.indexOf(flowPart)>-1) {
     let flowParts = JSON.parse(JSON.stringify(stateOf[`${flowPart}s`]));
 
@@ -378,7 +431,7 @@ export const clear = (stateOf:any, flowPart: string) => {
 };
 
 // runs the clear function on every flowPart bucket
-export const clearAll = (stateOf:any) => {
+export const clearAll = (stateOf:TurnModuleParams) => {
   FLOW_PARTS.forEach(flowPart => {
     stateOf.clear(flowPart).catch((err:any)=>{
       console.log(err);

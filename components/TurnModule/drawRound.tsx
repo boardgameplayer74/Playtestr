@@ -31,7 +31,6 @@ interface RoundOption {
 }
 
 export interface Round {
-  flowType: string;
   identity: Item;               // uniquely identifies this round
   description: string;          // free test to describe the round purpose
   type: string;                 // one of a pre-defined list of Round types
@@ -45,7 +44,6 @@ export interface Round {
 }
 
 export const NEW_ROUND = {
-  flowType: 'round',
   identity: null,
   description: '',
   type: '',

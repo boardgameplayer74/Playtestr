@@ -19,7 +19,6 @@ import css from './turn.module.css';
  */
 
 export interface Stage {
-  flowType: string;
   identity: Item;           // identifies this stage uniquely
   description: string;      // free test to describe the stage purpose
   rules: Array<Item>;       // list of rules used in this stage (?)
@@ -27,7 +26,6 @@ export interface Stage {
 }
 
 export const NEW_STAGE = {
-  flowType: 'stage',
   identity: null,
   description: '',
   rules: [],

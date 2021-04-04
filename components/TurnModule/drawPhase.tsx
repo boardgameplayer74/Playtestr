@@ -18,7 +18,6 @@ import css from './turn.module.css';
  */
 
 export interface Phase {
-  flowType: string;
   identity: Item;           //  uniquely identifies this phase
   description: string;      // free test to describe the phase purpose
   actions: Array<Item>;     // list of actions available in the phase
@@ -27,7 +26,6 @@ export interface Phase {
 }
 
 export const NEW_PHASE = {
-  flowType: 'phase',
   identity: null,
   description: '',
   actions: [],

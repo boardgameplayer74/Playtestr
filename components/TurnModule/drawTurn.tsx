@@ -35,7 +35,6 @@ interface TurnOption {
  * Turns are pre-defined structures that are selected by the designer 
  */
 export interface Turn {
-  flowType: string;
   identity: Item;             // uniquely identifies this Turn
   description: string;        // free test to describe the turn purpose
   type: string;               // one of a pre-defined list of Turn types
@@ -45,7 +44,6 @@ export interface Turn {
 }
 
 export const NEW_TURN = {
-  flowType: 'turn',
   identity: null,
   description: '',
   type: '',

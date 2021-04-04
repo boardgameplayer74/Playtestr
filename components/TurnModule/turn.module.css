@@ -44,6 +44,21 @@
   background-color: red;
   color: white;
 }
+.accordion div {
+  overflow-y: hidden;
+  margin: 0;
+  /* padding: 0 3px;*/
+}
+.accordionHeading {
+  background-color: rgba(0,0,0,.05);
+  margin: 1px;
+  padding: 0 3px;
+  border-radius: 3px;
+}
+.accordionBody {
+  background-color: rgba(0,0,0,.1);
+}
+
 /* instrcutions when the screen is small */
 @media screen and (max-width: 600px) {
   .helpButton {

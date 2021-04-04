@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-//import { v4 as uuidv4 } from 'uuid';
-import Draggable from 'react-draggable';
-//import { capitalizeFirstLetter } from '../common/naming';
 import css from './turn.module.css';
+import TMIInstructions from './instructions';
 
 /**
  * The turn module is responsible for controlling the flow of the game and 
@@ -71,7 +69,7 @@ import { RuleModuleParams, RuleModuleState } from '../RuleModule';
 // this returns the action module state so we can get a list of actions
 import { ActionModuleParams, ActionModuleState } from '../ActionModule';
 
-import { model, addLink, unLink, findChildren, findParents, addPart, killPart, moveDown, moveUp, changer, clear, clearAll, quickStart } from './functions';
+import { model, addLink, unLink, findChildren, findParents, reorderChildren, addPart, killPart, moveDown, moveUp, changer, clear, clearAll, quickStart } from './functions';
 
 // this interface holds the list of acceptable options for flowPart
 export interface FlowPartOptions {
@@ -117,6 +115,7 @@ export interface TurnModuleParams {
   unLink: Function;
   findChildren: Function;
   findParents: Function;
+  reorderChildren: Function;
   addPart: Function;
   killPart: Function;
   moveUp: Function;
@@ -167,10 +166,12 @@ export function TurnModuleState(){
     // creates or destroys familial links between flowParts
     addLink: (parent: Item, child:Item) => addLink(stateOf,parent,child),
     unLink: (parent: Item, child: Item) => unLink(stateOf,parent,child),
+    //unLinkAll: (identity: Item) => unLinkAll(stateOf,identity),
 
     // returns the identities of familial links
-    findChildren: (identity: Item) => findChildren(stateOf,identity),
-    findParents: (identity: Item) => findParents(stateOf,identity),
+    findChildren: (identity:Item) => findChildren(stateOf,identity),
+    findParents: (identity:Item) => findParents(stateOf,identity),
+    reorderChildren: (parent:Item,oldIndex:number,newIndex:number) => reorderChildren(stateOf,parent,oldIndex,newIndex),
 
     // allows the client to add, remove, and rearrange flow parts
     addPart: (flowPart: string, row: number) => addPart(stateOf,flowPart,row),
@@ -199,12 +200,6 @@ export function TurnModuleState(){
     // removes details from one or more flow parts
     clear: (flowPart: string) => clear(stateOf,flowPart),
     clearAll: () => clearAll(stateOf),
-
-    useThisEffect: (func:Function,dep=[]) => foo(func,dep)
-  };
-
-  function foo(func:any,dep:Array<any>){
-    useEffect(func,dep);
   };
 
   useEffect(()=>{
@@ -215,34 +210,6 @@ export function TurnModuleState(){
   return stateOf;
 }
 
-// this displays the TMI instructions when needed
-function TMIInstructions(stateOf:TurnModuleParams){
-  if (stateOf.showInstructions) {  
-    return (
-      <Draggable>
-        <div className={css.instructions}>
-          <h4>TMI Instructions
-            <button 
-              className={css.killInstuctions}
-              onClick={()=>{
-                stateOf.setShowInstructions(false);
-              }}
-            >X</button>
-          </h4>
-          <div>
-            <p>Every game has at least one each of Stage, Phase, Round, Turn, and Step. Yours may have multiple of any of them.</p>
-            <p>Stages determine the rules in effect during gameplay. Many games have only a single stage because there is only one set of rules in play; however, inclusion of a setup stage with truncated rules is common, as is a final stage where players tally points from milestone awards or collected cards, etc.</p>
-            <p>Phases broadly determine what actions are available to players and may divide play into thematic chunks. For example, your game might have planting, growing, and harvesting phases each with its own kinds of actions to be taken.</p>
-            <p>Rounds are generally sequences of each player receiving one full turn in some kind of order, with a new round started once each player has acted.  There are a lot of variations and options in rounds, including some that defy "traditional" round order at all.</p>
-            <p>Turns are time windows during which a player performs one or more actions sequentially before another agent is allowed to act, though options may alter this, like through <em>interrupts</em> or <em>reactions</em>.</p>
-            <p>Steps, like phases, divide up when actions can be taken into a thematic order; however, steps are all still part of the same player's turn.</p>
-            <p>The Quick Start button will create a simple game template for you; you can always change the names or add extra components later!</p>
-          </div>
-        </div>
-      </Draggable>
-    );
-  }
-}
 
 /**
  * The Turn Module Interface (TMI) is where we draw all the selectors that 

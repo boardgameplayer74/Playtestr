@@ -15,6 +15,7 @@
     "aws-amplify": "^3.3.22",
     "next": "^10.0.7",
     "react": "17.0.1",
+    "react-accessible-accordion": "^3.3.4",
     "react-dom": "17.0.1",
     "react-draggable": "^4.4.3",
     "react-select": "^4.2.1",

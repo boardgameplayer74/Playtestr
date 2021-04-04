@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from 'react';
-//import flowEditor from './flowEditor';
 import { TurnModuleParams } from './index';
 import Select, { components } from 'react-select';
-//import { SortableContainer, SortableElement, SortableHandle } from 'react-sortable-hoc';
+import { SortableContainer, SortableElement, SortableHandle } from 'react-sortable-hoc';
 import css from './turn.module.css';
-
-/*
-// helper to reorder arrays
-function arrayMove(array:any, from:number, to:number) {
-  array = array.slice();
-  array.splice(to < 0 ? array.length + to : to, 0, array.splice(from, 1)[0]);
-  return array;
-}
 
 // helper keep menu from opening on drag-n-drop
 const SortableMultiValue = SortableElement(props => {
@@ -33,7 +24,7 @@ const SortableMultiValueLabel = SortableHandle(props => (
 ));
 
 const SortableSelect = SortableContainer(Select);
-*/
+
 
 export function familySelector(
   stateOf: TurnModuleParams,
@@ -41,25 +32,6 @@ export function familySelector(
   relationship: string,
   flowType: string
 ){
-
-  // hook for setting the selected state
-  //const [selected, setSelected] = useState([]);
-
-  //const onChange = selectedOptions => setSelected(selectedOptions);
-
-  const onSortEnd = ({ oldIndex, newIndex }) => {
-    console.log('',);
-    console.log(`oldIndex: ${oldIndex}, newIndex: ${newIndex}`);
-    
-/*
-    const newValue = arrayMove(selected, oldIndex, newIndex);
-    setSelected(newValue);
-    console.log(
-      'Values sorted:',
-      newValue.map(i => i.value)
-    );
-*/
-  };
 
   // use this to hide the ID strings that appear in the TMI
   const customStyles = {
@@ -104,18 +76,20 @@ export function familySelector(
   }
   if (relationship=='child') {
     return (
-      <Select 
+      <SortableSelect 
         className={css.selector}
         styles={customStyles}
         isMulti
-        /*onSortEnd={onSortEnd}*/
+        axis="xy"
+        distance={4}
+        getHelperDimensions={({ node }) => node.getBoundingClientRect()}
+        onSortEnd={({ oldIndex, newIndex })=>{
+          stateOf.reorderChildren(flowPart.identity,oldIndex,newIndex);
+        }}
         options={stateOf[`${flowType}s`].map((thing:any)=>thing.identity)}
-        value={(()=>{
-          let selected = stateOf.findChildren(flowPart.identity);
-          //console.log('selected: ',selected);
-          return selected;
-        })()}
+        value={(()=>stateOf.findChildren(flowPart.identity))()}
         onChange={(selections,actionType) => {
+          console.log('ACTION TYPE: ',actionType);
           if (actionType.action=='select-option') {
             stateOf.addLink(flowPart.identity,actionType.option);
           } else if (actionType.action=='remove-value') {
@@ -124,10 +98,10 @@ export function familySelector(
             stateOf.unLink(flowPart.identity,null);
           }
         }}
-        /*components={{
+        components={{
           MultiValue: SortableMultiValue,
           MultiValueLabel: SortableMultiValueLabel,
-        }}*/
+        }}
       />
     );
   }
