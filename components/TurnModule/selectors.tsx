@@ -60,7 +60,10 @@ export function familySelector(
         className={css.selector}
         styles={customStyles}
         isMulti
-        value={(()=>stateOf.findParents(flowPart.identity))()}
+        value={(() => 
+          stateOf.findParents(flowPart.identity).sort((a,b) => 
+            (a.label>b.label) ? 1 : -1)
+        )()}
         options={stateOf[`${flowType}s`].map((thing:any)=>thing.identity)}
         onChange={(selections,actionType) => {
           if (actionType.action=='select-option') {
