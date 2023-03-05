@@ -1,38 +1,48 @@
-interface GameData {
-  numDragons: number;
-  numKingdoms: number;
-  startSheep: number;
-  numFeast: number;
-  numFamine: number;
-  rounds: number;
-  scores: number[];
-  scoreTotal: number;
+// the GameTrialStats type provides us with a a framework for storing play data about our game trials
+interface GameTrialStats {
+  numDragons:     number;
+  numKingdoms:    number;
+  startSheep:     number;
+  numFeast:       number;
+  numFamine:      number;
+  feastFactor:    number;
+  famineFactor:   number;
+  rounds:         number;
+  scores:         number[];
+  scoreHisto :    number[];
   dragonGrouping: number[];
-  winner: number;
+  winner:         number;
 }
 
+// a kingdom has a certain set of traits, like the number of sheep and Georges it has in it
 interface Kingdom {
-  index: number;
-  sheep: number;
+  index:    number;
+  sheep:    number;
+  georges:  number;
 };
 
-enum Mode {
-  hunting = 'HUNTING',
-  sneaking = 'SNEAKING',
-  warpath = 'WARPATH'
+// huntmode is how the dragon plans to collect sheep
+enum HuntMode {
+  hunting   = 'HUNTING',
+  sneaking  = 'SNEAKING',
+  warpath   = 'WARPATH'
 }
 
+// dragons have certain traits, like the number of sheep they've collected, level they are, and wounds they have
 interface Dragon {
-  index: number;
-  sheep: number;
-  location: number | null;
-  mode: Mode | null;
+  index:      number;
+  level:      number;
+  sheep:      number;
+  location:   number | null;
+  huntmode:   HuntMode | null;
+  wounds:     number;
+  hunger: number;
 };
 
 
 /**
  * create some kingdoms full of sheep
- * @param   numKingdoms the count of kingdoms this game will use
+ * @param   numKingdoms number of kingdoms this game will use
  * @return  Kingdom[]   an array of Kingdom objects
  */
 function generateKingdoms (
@@ -43,7 +53,8 @@ function generateKingdoms (
   for (let i=0; i<numKingdoms; i++) 
     kingdoms[i] = { 
       index: i,
-      sheep: startSheep
+      sheep: startSheep,
+      georges: 0
     };
   return kingdoms;
 }
@@ -60,9 +71,12 @@ function generateDragons (
   for (let i=0; i<numDragons; i++) 
     dragons[i] = { 
       index: i,
+      level: 1,
       sheep: 0,
       location: null,
-      mode: null
+      huntmode: null,
+      wounds: 0,
+      hunger: 0
     };
   return dragons;
 }
@@ -77,10 +91,10 @@ function generateDragons (
  * @param numFamine the number of kingdoms to pick for Famine
  */
 function runFeastAndFamineCycle (
-  kingdoms: Kingdom[],
-  numFeast: number,
-  numFamine: number,
-  feastFactor: number,
+  kingdoms:     Kingdom[],
+  numFeast:     number,
+  numFamine:    number,
+  feastFactor:  number,
   famineFactor: number
 ) : void {
   // validation
@@ -104,10 +118,8 @@ function runFeastAndFamineCycle (
   // kingdoms chosen for both feast and famine cancel out both effects
   let intersect : number[] = feastList.filter(i => famineList.indexOf(i)>-1);
   intersect.forEach(i => {
-    let pos1 = feastList.indexOf(i);
-    feastList.splice(pos1,1);
-    let pos2 = famineList.indexOf(i);
-    famineList.splice(pos2,1);
+    let pos1 = feastList.indexOf(i); feastList.splice(pos1,1);
+    let pos2 = famineList.indexOf(i); famineList.splice(pos2,1);
   });
   
   // provide feasts to the kingdoms that receive them
@@ -133,13 +145,8 @@ function runFeastAndFamineCycle (
     // TODO: add secondary feast and famine effects
   });
   */
-
-  // tell me what just happened
-  //console.log(`Kingdom(s) ${JSON.stringify(feastList)} received FEAST, and kingdom(s) ${JSON.stringify(famineList)} endured FAMINE.`);
-  //if (intersect.length>0) {
-  //  console.log(`Kingdom(s) ${JSON.stringify(intersect)} got FEAST & FAMINE`);
-  //}
 }
+
 
 /**
  * runs the kingdom choosing routine, where dragons pick kingdoms to hunt
@@ -165,7 +172,8 @@ function runChooseKingdomAndHuntMode (
       if (kingdoms[newLocation].sheep===0) isAcceptable = false;
     }
 
-    // TODO: add distance, sheep count, and dragon_count to the rubric
+    // TODO: add georges to the rubric
+    // dragons may avoid kingdoms with excessive georges, particularly if they are hurt
 
     // return the decision
     return isAcceptable;
@@ -174,29 +182,28 @@ function runChooseKingdomAndHuntMode (
   // dragons prefer kingdoms with at least 3 sheep because they don't want to exterminate all life
   let threePlusSheep = kingdoms.filter((kingdom:Kingdom) => kingdom.sheep>2);
 
-  // the probability that a dragon goes to a kingdom is proportional to the number of sheep it has
+  // the probability that a dragon chooses a kingdom is proportional to the number of sheep it has
   // this is done by adding the index for that kingdom a number of times equal to its sheep
   let kingdomProbs : number[] = [];
   kingdoms.forEach((kingdom:Kingdom) => {
     for (let i=0; i<kingdom.sheep; i++) kingdomProbs.push(kingdom.index);
   });
-  //console.log(`kingdomProbs: ${JSON.stringify(kingdomProbs)}`);
 
   // have each dragon choose where it's going to go and what it's going to do
   for (let turn=0; turn<dragons.length; turn++) {
     let dragon = dragons[startDragon];
 
-    // initially, the dragon's location and mode are reset
+    // initially, the dragon's location and huntmode are reset
     dragon.location = null;
-    dragon.mode = null;
+    dragon.huntmode = null;
 
     // sets the dragon's location to the first acceptable random choice found
-    // and it's mode to hunting
+    // and it's huntmode to hunting
     while (dragon.location===null) {
       let newLocation = kingdomProbs[Math.floor(Math.random()*kingdomProbs.length)];
       if (acceptKingdom(newLocation)) {
         dragon.location = newLocation;
-        dragon.mode = Mode.hunting;
+        dragon.huntmode = HuntMode.hunting;
       }
     }
 
@@ -206,7 +213,7 @@ function runChooseKingdomAndHuntMode (
 
 
 /**
- * runs the dragon feeding cycle, where each dragons take sheep based on location and mode
+ * runs the dragon feeding cycle, where each dragons take sheep based on location and huntmode
  * @param kingdoms  an array holding all the kingdoms
  * @param dragons   an array holding all the dragons
  */
@@ -216,103 +223,176 @@ function runDragonFeedingCycle (
   startDragon: number
 ) : void {
   // initially, all dragons only hunt, which means they share
+  // TODO: add sneaking
 
   // show me the dragon bellies (initially all zero)
-  let bellies = dragons.map(dragon => 0);
+  let dragonBellies = dragons.map(dragon => 0);
+
+  // perform play loops to get all dragons fed
   let change = true;
   do {
-    let preFeeding = JSON.parse(JSON.stringify(bellies));
+    let preFeeding = JSON.parse(JSON.stringify(dragonBellies));
 
     // give each dragon 1 turn
     for (let dragonNumber=0; dragonNumber<dragons.length; dragonNumber++) {
       let currentKingdom = dragons[startDragon].location;
 
-      if (bellies[dragonNumber]===0 && kingdoms[currentKingdom].sheep>0) {
+      if (dragonBellies[dragonNumber]===0 && kingdoms[currentKingdom].sheep>0) {
         // this dragon hasn't fed. It must eat.
-        bellies[dragonNumber]++;
+        dragonBellies[dragonNumber]++;
         kingdoms[currentKingdom].sheep--;
-        //console.log(`dragon ${dragonNumber} hunted in kingdom ${currentKingdom}`);
-      } else if (bellies[dragonNumber]>0 && kingdoms[currentKingdom].sheep>2) {
+      } else if (dragonBellies[dragonNumber]>0 && kingdoms[currentKingdom].sheep>2) {
         // this dragon would like to eat and there appears to be plenty available
-        bellies[dragonNumber]++;
+        dragonBellies[dragonNumber]++;
         kingdoms[currentKingdom].sheep--;
-        //console.log(`dragon ${dragonNumber} hunted in kingdom ${currentKingdom}`);
-      } else if (bellies[dragonNumber]>0 && kingdoms[currentKingdom].sheep===1) {
+      } else if (dragonBellies[dragonNumber]>0 && kingdoms[currentKingdom].sheep===1) {
         // this kingdom is depleted anyway, so might as well take the last sheep
-        bellies[dragonNumber]++;
+        dragonBellies[dragonNumber]++;
         kingdoms[currentKingdom].sheep--;
-        //console.log(`dragon ${dragonNumber} hunted in kingdom ${currentKingdom}`);
       } else if (kingdoms[currentKingdom].sheep===0) {
-        //console.log(`dragon ${dragonNumber} could not find food in kingdom ${currentKingdom}`);
+        // this kingdom has no sheep
       } else {
         // this dragon has already fed and the kingdom barely has any sheep
-        //console.log(`dragon ${dragonNumber} with belly ${bellies[dragonNumber]} chose not to feed in Kingdom ${currentKingdom} with ${kingdoms[currentKingdom].sheep} sheep`);
       }
 
       // go to the next dragon
-      startDragon = (startDragon + 1) % dragons.length
+      startDragon = (startDragon + 1) % dragons.length;
     }
 
-    // see if the bellies have changed
-    change = bellies.reduce((prev,belly,index) => {
+    // see if the dragon bellies have changed
+    change = dragonBellies.reduce((prev,belly,index) => {
       if (belly!==preFeeding[index]) return true;
       return prev;
     },false);
 
+    // as long as bellies are changing, keep performing the feeding loop
   } while (change===true);
+
+  // if any dragon did not get sheep, that dragon goes hungry
+  dragonBellies.forEach((belly:number, index:number) => {
+    if (belly===0) dragons[index].hunger++;
+  });
 
   // now that the dragons have stopped feeding, update their sheep count
   dragons.forEach((dragon,index) => {
-    dragon.sheep += bellies[index];
+    dragon.sheep += dragonBellies[index];
   });
 
 }
 
 /**
- * this runs a single simulation of the dragon game
+ * at the end of the round dragons first heal wounds with their sheep and then gain levels (if they can)
+ * @param dragons     
+ * @param startDragon 
+ */
+function runHealingAndLeveling(
+  dragons:      Dragon[],
+  startDragon:  number
+) : void {
+
+  // we run this reward loop as long as dragons can keep gaining levels
+  let crazyLoopCatcher = 0;
+  do {
+    var levelUps = false;
+    // each dragon gets a turn, in current turn order
+    for (let d=0; d<dragons.length; d++) {
+      // first thing is to heal
+      if (dragons[startDragon].wounds > dragons[startDragon].sheep) {
+        // this dragon has more wounds than sheep - heal as many wounds as possible
+        dragons[startDragon].wounds -= dragons[startDragon].sheep;
+        dragons[startDragon].sheep = 0;
+      } else {
+        // this dragon has less wounds than sheep
+        dragons[startDragon].sheep -= dragons[startDragon].wounds;
+        dragons[startDragon].wounds = 0;
+      }
+
+      // dragons with leftover sheep will gain a level if they can
+      if (dragons[startDragon].sheep >= dragons[startDragon].level) {
+        dragons[startDragon].sheep -= dragons[startDragon].level;
+        dragons[startDragon].level++;
+        levelUps = true;
+        // TODO: dragons who gain a level also gain a Treasure card
+
+        // if a dragon reaches level 10, the game instantly ends
+        if (dragons[startDragon].level===10) break;      
+      }
+
+      startDragon = (startDragon + 1) % dragons.length;
+
+      if (++crazyLoopCatcher>90) {
+        console.log(`Loop:${crazyLoopCatcher} startDragon:${startDragon} levelUps:${levelUps}`);
+        console.log(dragons);
+        if (crazyLoopCatcher>100) break;
+      }
+    }
+  } while (levelUps===true);
+
+}
+
+
+/**
+ * this runs a single simulation of the dragon game with the chosen parameters
+ * @param gameTrialStats  an array of gametrialstats
+ * @param numDragons      number of dragons feeding
+ * @param numKingdoms     number of kingdoms
+ * @param startSheep      sheep each kingdom starts with
+ * @param numFeast        feast cards drawn per round
+ * @param numFamine       famine cards drawn per round
+ * @param feastFactor     sheep gained for every 2 sheep a country has
+ * @param famineFactor    group size for losing 1 sheep; IE, lose 1 of every X sheep
  */
 function playOneGame (
-  gameData: GameData[],
-  numDragons: number,
-  numKingdoms: number,
-  startSheep: number,
-  numFeast: number,
-  numFamine: number,
-  feastFactor: number,
-  famineFactor: number
+  gameTrialStats: GameTrialStats[],
+  numDragons:   number,
+  numKingdoms:  number,
+  startSheep:   number,
+  numFeast:     number,
+  numFamine:    number,
+  feastFactor:  number,
+  famineFactor: number,
+  testing:      boolean
 ) : void {
-  //console.log();
-  //console.log(`*** NEW GAME ***`);
+  // show me some debugging stuff when receiving the testing flag
+  if (testing) {
+    console.log();
+    console.log(`*** NEW GAME ***`);
+  }
 
   // start with the base kingdoms and dragons
   let kingdoms = generateKingdoms(numKingdoms,startSheep);
   let dragons = generateDragons(numDragons);
 
-  // let the dragons fly around and get sheep
-  // dragon 0 is always starts as first player, but each round first player shifts
-  let startDragon = 0, winner = -1;
+  // dragon 0 is always first player, but each round first player shifts
+  let startDragon = 0, winner = false, extinction = false;
   let dragonGrouping = dragons.map((dragon:Dragon) => 0);
-  for (var round=0; round<100 && winner===-1; round++) {
-    //console.log(`Round ${round+1} of the game, first dragon: ${startDragon}`);
 
-    // pick a kingdom and a hunt mode for each dragon
+  // this is the core game cycle
+  // the max rounds has a hard stop just for safety - the standard stop is to find a winner or go extinct
+  for (var round=0; round<100 && winner===false && extinction===false; round++) {
+    console.log(`Round ${round+1} of the game, first dragon: ${startDragon}`);
+
+    // let each dragon pick a kingdom and a huntmode
+    //console.log(`choose tactics`);
     runChooseKingdomAndHuntMode(kingdoms,dragons,startDragon);
 
-    //console.log(`the dragons:`);
-    //console.log(dragons);
+    if (testing) {
+      //console.log(`the dragons:`);
+      //console.log(dragons);
+    }
 
-    // now that all dragons have chosen a location, run a feast and famine cycle
+    // run a feast and famine cycle to add and remove sheep *after* dragons have chosen actions
     if (numFeast>kingdoms.length) break;
+    //console.log(`feast and famine`)
     runFeastAndFamineCycle(kingdoms,numFeast,numFamine,feastFactor,famineFactor);
 
-    //console.log(`kingdoms before feeding:`);
-    //console.log(kingdoms);
-
-    // the dragon feed cycle
+    // split the food between the dragons
+    //console.log(`feeding`)
     runDragonFeedingCycle(kingdoms,dragons,startDragon);
 
-    //console.log(`kingdoms after feeding:`);
-    //console.log(kingdoms);
+    // allow dragons to heal and level-up
+    //console.log(`leveling`)
+    runHealingAndLeveling(dragons,startDragon);
 
     // this counts how many dragons are in each kingdom
     let kingdomMap = kingdoms.map((kingdom:Kingdom) => 0);
@@ -326,51 +406,58 @@ function playOneGame (
     });
 
     // this checks to see if there is a winner
-    winner = dragons.reduce((prev:number,curr:Dragon) => {
-      if (curr.sheep>=54) return curr.index;
+    winner = dragons.reduce((prev:boolean,curr:Dragon) => {
+      if (curr.level===10) return true;
       return prev;
-    },-1);
-    if (winner>-1) {
-      //console.log(`Dragon ${winner} just won the game`);
-      //console.log(dragons);
-      //console.log();
-      break;
-    }
+    },false);
 
     // this checks to see if all sheep have been eaten
-    let totalSheep = kingdoms.reduce((agg,kingdom) => agg+kingdom.sheep,0);
-    if (totalSheep===0) break;
+    extinction = kingdoms.reduce((prev:boolean,kingdom:Kingdom) => {
+      if (kingdom.sheep>0) return false;
+      return prev;
+    },true);
 
     // shift the first player by one each round
     startDragon = (startDragon + 1) % dragons.length;
   }
 
-  //console.log(`game lasted ${round+1} rounds`);
+  if (testing) console.log(`game lasted ${round+1} rounds`);
 
-  let game: GameData = {
+  // record the final scores and the score histogram
+  let scores = dragons.map((dragon : Dragon) => dragon.level);
+  let scoreHisto = [0,0,0,0,0,0,0,0,0,0,0];
+  scores.forEach((score:number) => scoreHisto[score]++);
+
+  let gameTrial: GameTrialStats = {
     numDragons,
     numKingdoms,
     startSheep,
     numFeast,
     numFamine,
+    feastFactor,
+    famineFactor,
     rounds: round+1,
-    scores: dragons.map((dragon : Dragon) => dragon.sheep),
-    scoreTotal: dragons.reduce((prev:number,curr:Dragon) => prev + curr.sheep,0),
+    scores,
+    scoreHisto,
     dragonGrouping,
-    winner: (winner > -1) ? 1 : 0
+    winner: (winner===true) ? 1 : 0
   };
 
   // show this game's data
-  //console.log(game);
+  if (testing) {
+    console.log(kingdoms);
+    console.log(dragons);
+    console.log(gameTrial);
+  }
 
   // record this game's data
-  gameData.push(game);
+  gameTrialStats.push(gameTrial);
 
 };
 
 
 function playManyGames (
-  gameParameterTrials: GameData[],
+  gameParameterTrials: GameTrialStats[],
   games: number,
   numDragons: number,
   numKingdoms: number,
@@ -381,10 +468,11 @@ function playManyGames (
   famineFactor: number
 ) : void {
   // this stores statistics from our game
-  let gameData : GameData[] = [];
+  let gameTrialStats : GameTrialStats[] = [];
 
   // this plays the game many times
-  for (let game=0; game<games; game++) playOneGame(gameData,numDragons,numKingdoms,startSheep,numFeast,numFamine,feastFactor,famineFactor);
+  let testing = (games===1) ? true : false;
+  for (let game=0; game<games; game++) playOneGame(gameTrialStats,numDragons,numKingdoms,startSheep,numFeast,numFamine,feastFactor,famineFactor,testing);
 
   // creates some calculation helpers
   let arr1 : number[] = [], arr2 : number[] = [];
@@ -392,60 +480,54 @@ function playManyGames (
     arr1.push(0);
     arr2.push(0);
   }
-  let scores = gameData.reduce((prev,curr:GameData) => {
+  let scores = gameTrialStats.reduce((prev,curr:GameTrialStats) => {
     return prev.map((qty:number,ind:number) => qty + curr.scores[ind] / games)
   },arr1);
-  let grouping = gameData.reduce((prev,curr:GameData) => {
+  let scoreHisto = gameTrialStats.reduce((prev,curr:GameTrialStats) => {
+    return prev.map((qty:number,ind:number) => qty + curr.scoreHisto[ind] / games)
+  },[0,0,0,0,0,0,0,0,0,0,0]);
+  let grouping = gameTrialStats.reduce((prev,curr:GameTrialStats) => {
     return prev.map((qty:number,ind:number) => qty + curr.dragonGrouping[ind] / games)
   },arr2);
 
   // this calculates what the average game looks like with these parameters
-  let averageGameData : GameData = {
+  let averageGameTrialStats : GameTrialStats = {
     numDragons,
     numKingdoms,
     startSheep,
     numFeast,
     numFamine,
-    rounds: Math.round(gameData.reduce((prev,curr:GameData) => prev+curr.rounds,0) / games * 10) / 10,
+    feastFactor,
+    famineFactor,
+    rounds: Math.round(gameTrialStats.reduce((prev,curr:GameTrialStats) => prev+curr.rounds,0) / games * 10) / 10,
     scores: scores.map((qty:number) => Math.round(qty*10)/10),
-    scoreTotal: scores.reduce((prev:number,curr:number) => prev+curr,0),
+    scoreHisto: scoreHisto.map((qty:number) => Math.round(qty*10)/10),
     dragonGrouping: grouping.map((qty:number) => Math.round(qty*10) / 10),
-    winner: Math.round(gameData.reduce((prev,curr:GameData) => prev+curr.winner,0) / games * 10) / 10
+    winner: Math.round(gameTrialStats.reduce((prev,curr:GameTrialStats) => prev+curr.winner,0) / games * 100) / 100
   }
 
   // show the average game
-  //console.log(`The average game:`);
-  //console.log(averageGameData);
+  console.log(`The average game:`);
+  console.log(averageGameTrialStats);
 
-  gameParameterTrials.push(averageGameData);
+  gameParameterTrials.push(averageGameTrialStats);
 }
 
 // how we store our game trial data
-let gameParameterTrials : GameData[] = [];
-let numDragons = 4;
+let gameParameterTrials : GameTrialStats[] = [];
 
-/*
-let numKingdoms = 12;
-let startSheep = 6;
-let numFeast = 6;
-let numFamine = 1;
-let feastFactor = 2;
-let famineFactor = 2;
-// when testing a single play-through
-//playOneGame(gameParameterTrials,numDragons,numKingdoms,startSheep,numFeast,numFamine,feastFactor,famineFactor);
-playManyGames(gameParameterTrials, 10, numDragons,numKingdoms,startSheep,numFeast,numFamine,feastFactor,famineFactor);
-//console.log(gameParameterTrials);
-*/
 
 let trial = 0;
-for (let numKingdoms = 1; numKingdoms <= 8; numKingdoms++) {
-  for (let startSheep = 3; startSheep <= 5; startSheep++) {
-    for (let feastFactor = 1; feastFactor <= 3; feastFactor++) {
-      for (let famineFactor = 2; famineFactor <= 3; famineFactor++) {
-        for (let numFeast = 1; numFeast <= numKingdoms; numFeast++) {
-          for (let numFamine = 1; numFamine <= numKingdoms; numFamine++) {
-            console.log(`Trail ${++trial}`);
-            playManyGames(gameParameterTrials, 1000, numDragons,numKingdoms,startSheep,numFeast,numFamine,feastFactor,famineFactor);
+for (let numDragons = 4; numDragons <= 4; numDragons++) {
+  for (let numKingdoms = 9; numKingdoms <= 9; numKingdoms++) {
+    for (let startSheep = 3; startSheep <= 3; startSheep++) {
+      for (let feastFactor = 4; feastFactor <= 4; feastFactor++) {
+        for (let famineFactor = 4; famineFactor <= 4; famineFactor++) {
+          for (let numFeast = 4; numFeast <= 4; numFeast++) {
+            for (let numFamine = 1; numFamine <= 1; numFamine++) {
+              console.log(`Trail ${++trial}`);
+              playManyGames(gameParameterTrials, 1000, numDragons,numKingdoms,startSheep,numFeast,numFamine,feastFactor,famineFactor);
+            }
           }
         }
       }
@@ -454,11 +536,11 @@ for (let numKingdoms = 1; numKingdoms <= 8; numKingdoms++) {
 }
 
 // filter down to trials with an acceptable win ratio
-let final = gameParameterTrials.filter((a:GameData) => (a.winner >= .6 && a.winner < .9));
-final.sort((a:GameData,b:GameData) => a.winner - b.winner);
+let final = gameParameterTrials.filter((a:GameTrialStats) => (a.winner >= .7 && a.winner <= .9));
+final.sort((a:GameTrialStats,b:GameTrialStats) => a.winner - b.winner);
 
 //console.log(final);
-final.forEach((trial:GameData,index:number)=>{
+final.forEach((trial:GameTrialStats,index:number)=>{
   let keys = Object.keys(trial);
   if (index===0) console.log(JSON.stringify(keys));
   else {
